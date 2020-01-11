@@ -1,19 +1,28 @@
 cmake_minimum_required(VERSION 3.12)
 project(Sculptor LANGUAGES CXX CUDA)
 
+set(CMAKE_COMPILER_IS_GNUCC TRUE)
 file(GLOB source_files  ${CMAKE_SOURCE_DIR}/src/*.cu ${CMAKE_SOURCE_DIR}/src/*.cpp ${CMAKE_SOURCE_DIR}/include/*.hpp)
 add_executable(${PROJECT_NAME} main.cpp ${source_files})
+
+# Cuda
+find_package(CUDA)
+set(CUDA_PROPAGATE_HOST_FLAGS OFF)
+set_target_properties(${PROJECT_NAME} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+set(CMAKE_CUDA_STANDARD 14)
+set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+set(CUDA_LINK_LIBRARIES_KEYWORD PUBLIC)
 
 # OpenGL
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(glfw3 REQUIRED)
-include_directories(${OPENGL_INCLUDE_DIRS} ${GLUT_INCLUDE_DIRS})
+include_directories(${OPENGL_INCLUDE_DIRS} ${GLUT_INCLUDE_DIRS} ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES} ${GLEW_LIBRARIES} glfw)
 
 # Compile options
 set_property(TARGET ${PROJECT_NAME} PROPERTY CUDA_STANDARD 14)
-set(CMAKE_CUDA_FLAGS " -O3 --maxrregcount 32 -lineinfo")
+set(CUDA_NVCC_FLAGS "-O0 --maxrregcount 32 -lineinfo")
 set(CMAKE_CXX_FLAGS
     "-std=c++17                \
     -Weffc++                   \
