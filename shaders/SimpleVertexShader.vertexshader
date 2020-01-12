@@ -1,8 +1,8 @@
 #version 330 core
-layout(location = 0) in vec3 vertexPosition_modelspace;
-layout(location = 0) in vec3 normal_vector;
+layout(location = 0)in vec3 vertexPosition_modelspace;
+layout(location = 2)in vec3 normal_vector;
 
-uniform mat4 MVP;
+uniform mat4 mvp;
 
 mat4 rotationMatrix(vec3 axis, float angle)
 {
@@ -18,6 +18,6 @@ mat4 rotationMatrix(vec3 axis, float angle)
 }
 
 void main(){
-    gl_Position = MVP * vec4(vertexPosition_modelspace, 1);
+    gl_Position = mvp * vec4(vertexPosition_modelspace, 1);
 }
 
