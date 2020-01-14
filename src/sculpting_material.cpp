@@ -106,48 +106,49 @@ bool LoadOBJ(std::string_view path,
 SculptingMaterial::SculptingMaterial(MaterialType material_type,
                                      InitialShape initial_shape,
                                      int size)
-    : material_offsets(), material_properties() {
+    : reference_model_(), material_() {
   switch (material_type) {
     case MaterialType::CUBE:
-      LoadOBJ("../Sculptor/models/Cube.obj", material_properties.verticies,
-              material_properties.uvs, material_properties.normals);
+      LoadOBJ("../Sculptor/models/Cube.obj", reference_model_.verticies,
+              reference_model_.uvs, reference_model_.normals);
       break;
     case MaterialType::SPHERE:
-      LoadOBJ("../Sculptor/models/Sphere.obj", material_properties.verticies,
-              material_properties.uvs, material_properties.normals);
+      LoadOBJ("../Sculptor/models/Sphere.obj", reference_model_.verticies,
+              reference_model_.uvs, reference_model_.normals);
       break;
   }
   Reset(initial_shape, size);
 }
 
 void SculptingMaterial::Reset(InitialShape new_shape, int size) {
-  material_offsets.clear();
+  material_.verticies.clear();
+  material_.normals.clear();
+  material_.verticies.reserve(reference_model_.verticies.size() * size * size *
+                              size);
+  material_.verticies.reserve(reference_model_.normals.size() * size * size *
+                              size);
+  material_.offsets.reserve(size * size * size);
   auto half_size = static_cast<float>(size) / 2;
+  auto sizef = static_cast<float>(size);
   switch (new_shape) {
     case InitialShape::CUBE:
-      material_offsets.reserve(size * size * size);
       for (auto x = -half_size; x <= half_size; ++x)
         for (auto y = -half_size; y <= half_size; ++y)
-          for (auto z = -half_size; z <= half_size; ++z)
-            material_offsets.emplace_back(x, y, z);
-      material_offsets.shrink_to_fit();
+          for (auto z = -half_size; z <= half_size; ++z) {
+            material_.offsets.emplace_back(x, y, z);
+            for (auto const& vec : reference_model_.verticies)
+              material_.verticies.emplace_back(
+                  (vec + material_.offsets.back()) / sizef);
+          }
       break;
   }
 }
 
 std::vector<glm::vec3> const& SculptingMaterial::GetVerticiesProperty() const {
-  return material_properties.verticies;
-}
-
-std::vector<glm::vec2> const& SculptingMaterial::GetUVsProperty() const {
-  return material_properties.uvs;
+  return material_.verticies;
 }
 
 std::vector<glm::vec3> const& SculptingMaterial::GetNormalsProperty() const {
-  return material_properties.normals;
-}
-
-std::vector<glm::vec3> const& SculptingMaterial::GetMaterialOffsets() const {
-  return material_offsets;
+  return material_.normals;
 }
 }  // namespace Sculptor

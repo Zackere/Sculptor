@@ -121,7 +121,7 @@ int Sculptor::Main() {
   GLFWwindow* window;
   constexpr float wWidth = 640.f, wHeight = 480.f;
   window = glfwCreateWindow(static_cast<int>(wWidth), static_cast<int>(wHeight),
-                            "Sculptor", NULL, NULL);
+                            "Sculptor", nullptr, nullptr);
   if (!window)
     return -1;
 
@@ -135,7 +135,7 @@ int Sculptor::Main() {
   glGenVertexArrays(1, &VertexArrayID);
   glBindVertexArray(VertexArrayID);
 
-  constexpr float side_len = 60;
+  constexpr float side_len = 50;
   SculptingMaterial material(SculptingMaterial::MaterialType::CUBE,
                              SculptingMaterial::InitialShape::CUBE, side_len);
   GLuint vertexbuffer;
@@ -150,12 +150,6 @@ int Sculptor::Main() {
   glBufferData(GL_ARRAY_BUFFER,
                material.GetNormalsProperty().size() * 3 * sizeof(float),
                material.GetNormalsProperty().data(), GL_STATIC_DRAW);
-  GLuint offsetbuffer;
-  glGenBuffers(1, &offsetbuffer);
-  glBindBuffer(GL_ARRAY_BUFFER, offsetbuffer);
-  glBufferData(GL_ARRAY_BUFFER,
-               material.GetMaterialOffsets().size() * 3 * sizeof(float),
-               material.GetMaterialOffsets().data(), GL_STATIC_DRAW);
   auto programID =
       LoadShaders("../Sculptor/shaders/SimpleVertexShader.vertexshader",
                   "../Sculptor/shaders/SimpleFragmentShader.fragmentshader");
@@ -164,17 +158,16 @@ int Sculptor::Main() {
       glm::radians(45.0f), (float)wWidth / (float)wHeight, 0.1f, 100.0f);
   glm::mat4 View =
       glm::lookAt(glm::vec3(3, 0, 0), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
-  auto pv = Projection * View;
+  auto vp = Projection * View;
   GLuint MatrixID = glGetUniformLocation(programID, "mvp");
 
   glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
   glClearColor(44.0f / 255.0f, 219.0f / 255.0f, 216.0f / 255.0f, 0.0f);
-  float rotation = 0;
   do {
     if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-      rotation += -0.1f;
+      vp = glm::rotate(vp, -0.1f, glm::vec3(0, 1, 0));
     else if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-      rotation += 0.1f;
+      vp = glm::rotate(vp, 0.1f, glm::vec3(0, 1, 0));
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -187,15 +180,9 @@ int Sculptor::Main() {
     glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
     glUseProgram(programID);
-    for (auto& offset : material.GetMaterialOffsets()) {
-      auto mvp = pv;
-      mvp = glm::rotate(mvp, rotation, glm::vec3(0, 1, 0));
-      mvp =
-          glm::scale(mvp, glm::vec3(1 / side_len, 1 / side_len, 1 / side_len));
-      mvp = glm::translate(mvp, offset);
-      glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &mvp[0][0]);
-      glDrawArrays(GL_TRIANGLES, 0, material.GetVerticiesProperty().size());
-    }
+    glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &vp[0][0]);
+    glDrawArrays(GL_TRIANGLES, 0, material.GetVerticiesProperty().size());
+
     glDisableVertexAttribArray(0);
 
     glfwSwapBuffers(window);
