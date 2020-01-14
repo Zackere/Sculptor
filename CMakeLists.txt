@@ -12,6 +12,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 set(CMAKE_CUDA_STANDARD 14)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 set(CUDA_LINK_LIBRARIES_KEYWORD PUBLIC)
+include_directories($ENV{CUDA_PATH}/include)
 
 # OpenGL
 find_package(OpenGL REQUIRED)
@@ -22,16 +23,15 @@ target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES} ${GLEW_LIBRARIES} glfw
 
 # Compile options
 set_property(TARGET ${PROJECT_NAME} PROPERTY CUDA_STANDARD 14)
-set(CUDA_NVCC_FLAGS "-O0 --maxrregcount 32 -lineinfo")
+set(CUDA_NVCC_FLAGS "--maxrregcount 32 -lineinfo")
 set(CMAKE_CXX_FLAGS
     "-std=c++17                \
     -Weffc++                   \
     -Wredundant-decls          \
-    -Wmissing-declarations     \
     -Wall                      \
     -Wextra                    \
     -Wshadow                   \
-    -O2                        \
+    -O3                        \
     -Wswitch-enum              \
     -Werror                    \
     -Wredundant-decls          \
