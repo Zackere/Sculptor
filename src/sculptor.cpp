@@ -139,27 +139,9 @@ int Sculptor::Main() {
   glGenVertexArrays(1, &VertexArrayID);
   glBindVertexArray(VertexArrayID);
 
-  constexpr float side_len = 70;
+  constexpr float side_len = 20;
   SculptingMaterial material(SculptingMaterial::MaterialType::CUBE,
                              SculptingMaterial::InitialShape::CUBE, side_len);
-  GLuint vertexbuffer;
-  glGenBuffers(1, &vertexbuffer);
-  glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-  glBufferData(GL_ARRAY_BUFFER,
-               material.GetVerticiesProperty().size() * 3 * sizeof(float),
-               material.GetVerticiesProperty().data(), GL_STATIC_DRAW);
-  GLuint uvbuffer;
-  glGenBuffers(1, &uvbuffer);
-  glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
-  glBufferData(GL_ARRAY_BUFFER,
-               material.GetUVSProperty().size() * 2 * sizeof(float),
-               material.GetUVSProperty().data(), GL_STATIC_DRAW);
-  GLuint normalbuffer;
-  glGenBuffers(1, &normalbuffer);
-  glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
-  glBufferData(GL_ARRAY_BUFFER,
-               material.GetNormalsProperty().size() * 3 * sizeof(float),
-               material.GetNormalsProperty().data(), GL_STATIC_DRAW);
 
   std::vector<unsigned char> image;  // the raw pixels
   unsigned width, height;
@@ -190,6 +172,7 @@ int Sculptor::Main() {
 
   glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
   glClearColor(44.0f / 255.0f, 219.0f / 255.0f, 216.0f / 255.0f, 0.0f);
+
   do {
     if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
       vp = glm::rotate(vp, -0.01f, glm::vec3(0, 1, 0));
@@ -199,20 +182,21 @@ int Sculptor::Main() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, material.GetVerticiesBuffer());
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+    glUnmapBuffer(GL_ARRAY_BUFFER);
 
     glEnableVertexAttribArray(1);
-    glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, material.GetUVBuffer());
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
 
     glEnableVertexAttribArray(2);
-    glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, material.GetNormalsBuffer());
     glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
     glUseProgram(programID);
     glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &vp[0][0]);
-    glDrawArrays(GL_TRIANGLES, 0, material.GetVerticiesProperty().size());
+    glDrawArrays(GL_TRIANGLES, 0, material.GetNVerticies());
 
     glDisableVertexAttribArray(0);
 

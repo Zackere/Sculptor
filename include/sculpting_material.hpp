@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "GL/glew.h"
 #include "glm/glm.hpp"
 
 namespace Sculptor {
@@ -19,9 +20,14 @@ class SculptingMaterial {
                     InitialShape initial_shape,
                     int size);
   void Reset(InitialShape new_shape, int size);
-  std::vector<glm::vec3> const& GetVerticiesProperty() const;
-  std::vector<glm::vec2> const& GetUVSProperty() const;
-  std::vector<glm::vec3> const& GetNormalsProperty() const;
+
+  auto GetVerticiesBuffer() const { return material_.verticies; }
+  auto GetUVBuffer() const { return material_.uvs; }
+  auto GetNormalsBuffer() const { return material_.normals; }
+  auto GetNVerticies() const { return nverticies_; }
+  auto const& GetMaterialElements() const { return material_.offsets; }
+
+  void RemoveAt(unsigned index);
 
  private:
   struct {
@@ -30,10 +36,9 @@ class SculptingMaterial {
     std::vector<glm::vec3> normals = {};
   } reference_model_;
   struct {
-    std::vector<glm::vec3> verticies = {};
-    std::vector<glm::vec2> uvs = {};
-    std::vector<glm::vec3> normals = {};
+    GLuint verticies = 0, uvs = 0, normals = 0;
     std::vector<glm::vec3> offsets = {};
   } material_;
+  GLsizei nverticies_ = 0;
 };
 }  // namespace Sculptor

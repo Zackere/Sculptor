@@ -109,6 +109,10 @@ SculptingMaterial::SculptingMaterial(MaterialType material_type,
                                      InitialShape initial_shape,
                                      int size)
     : reference_model_(), material_() {
+  glGenBuffers(1, &material_.verticies);
+  glGenBuffers(1, &material_.uvs);
+  glGenBuffers(1, &material_.normals);
+
   switch (material_type) {
     case MaterialType::CUBE:
       LoadOBJ("../Sculptor/models/Cube.obj", reference_model_.verticies,
@@ -123,47 +127,79 @@ SculptingMaterial::SculptingMaterial(MaterialType material_type,
 }
 
 void SculptingMaterial::Reset(InitialShape new_shape, int size) {
-  material_.verticies.clear();
-  material_.normals.clear();
+  std::vector<glm::vec3> verticies = {}, normals = {};
+  verticies.reserve(reference_model_.verticies.size() * size * size * size);
+  normals.reserve(reference_model_.normals.size() * size * size * size);
+  std::vector<glm::vec2> uvs = {};
+  uvs.reserve(reference_model_.uvs.size() * size * size * size);
   material_.offsets.clear();
-
-  material_.verticies.reserve(reference_model_.verticies.size() * size * size *
-                              size);
-  material_.uvs.reserve(reference_model_.uvs.size() * size * size * size);
-  material_.normals.reserve(reference_model_.normals.size() * size * size *
-                            size);
   material_.offsets.reserve(size * size * size);
 
   auto sizef = static_cast<float>(size - 1);
   auto scale = 1.f / size;
   switch (new_shape) {
     case InitialShape::CUBE:
-      for (auto x = -sizef; x < sizef; x += 2)
-        for (auto y = -sizef; y < sizef; y += 2)
-          for (auto z = -sizef; z < sizef; z += 2) {
+      for (auto x = -sizef; x <= sizef; x += 2)
+        for (auto y = -sizef; y <= sizef; y += 2)
+          for (auto z = -sizef; z <= sizef; z += 2) {
             material_.offsets.emplace_back(x, y, z);
             for (auto const& vec : reference_model_.verticies)
-              material_.verticies.emplace_back(
-                  (vec + material_.offsets.back()) * scale);
+              verticies.emplace_back((vec + material_.offsets.back()) * scale);
             std::copy(reference_model_.normals.begin(),
                       reference_model_.normals.end(),
-                      std::back_inserter(material_.normals));
+                      std::back_inserter(normals));
             std::copy(reference_model_.uvs.begin(), reference_model_.uvs.end(),
-                      std::back_inserter(material_.uvs));
+                      std::back_inserter(uvs));
           }
+      nverticies_ = verticies.size();
+      glBindBuffer(GL_ARRAY_BUFFER, material_.verticies);
+      glBufferData(GL_ARRAY_BUFFER, verticies.size() * 3 * sizeof(float),
+                   verticies.data(), GL_STATIC_DRAW);
+      glBindBuffer(GL_ARRAY_BUFFER, material_.uvs);
+      glBufferData(GL_ARRAY_BUFFER, uvs.size() * 2 * sizeof(float), uvs.data(),
+                   GL_STATIC_DRAW);
+      glBindBuffer(GL_ARRAY_BUFFER, material_.normals);
+      glBufferData(GL_ARRAY_BUFFER, normals.size() * 3 * sizeof(float),
+                   normals.data(), GL_STATIC_DRAW);
       break;
   }
 }
 
-std::vector<glm::vec3> const& SculptingMaterial::GetVerticiesProperty() const {
-  return material_.verticies;
-}
+void SculptingMaterial::RemoveAt(unsigned index) {
+  if (index >= material_.offsets.size()) {
+    std::cerr << "Index is out of bounds : index: " << index << std::endl;
+    return;
+  }
+  if (material_.offsets.empty())
+    return;
 
-std::vector<glm::vec2> const& SculptingMaterial::GetUVSProperty() const {
-  return material_.uvs;
-}
-
-std::vector<glm::vec3> const& SculptingMaterial::GetNormalsProperty() const {
-  return material_.normals;
+  if (index < material_.offsets.size() - 1) {
+    glBindBuffer(GL_ARRAY_BUFFER, material_.verticies);
+    auto* v = reinterpret_cast<glm::vec3*>(
+        glMapBuffer(GL_ARRAY_BUFFER, GL_READ_WRITE));
+    for (auto i = 0u; i < reference_model_.verticies.size(); ++i)
+      v[index * reference_model_.verticies.size() + i] =
+          v[(material_.offsets.size() - 1) * reference_model_.verticies.size() +
+            i];
+    glUnmapBuffer(GL_ARRAY_BUFFER);
+    glBindBuffer(GL_ARRAY_BUFFER, material_.uvs);
+    auto* u = reinterpret_cast<glm::vec2*>(
+        glMapBuffer(GL_ARRAY_BUFFER, GL_READ_WRITE));
+    for (auto i = 0u; i < reference_model_.uvs.size(); ++i)
+      u[index * reference_model_.uvs.size() + i] =
+          u[(material_.offsets.size() - 1) * reference_model_.uvs.size() + i];
+    glUnmapBuffer(GL_ARRAY_BUFFER);
+    glBindBuffer(GL_ARRAY_BUFFER, material_.normals);
+    auto* n = reinterpret_cast<glm::vec3*>(
+        glMapBuffer(GL_ARRAY_BUFFER, GL_READ_WRITE));
+    for (auto i = 0u; i < reference_model_.normals.size(); ++i)
+      n[index * reference_model_.normals.size() + i] =
+          n[(material_.offsets.size() - 1) * reference_model_.normals.size() +
+            i];
+    glUnmapBuffer(GL_ARRAY_BUFFER);
+    material_.offsets[index] = material_.offsets.back();
+  }
+  nverticies_ -= reference_model_.verticies.size();
+  material_.offsets.pop_back();
 }
 }  // namespace Sculptor
