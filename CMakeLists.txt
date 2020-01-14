@@ -28,7 +28,6 @@ set(CMAKE_CXX_FLAGS
     "-std=c++17                \
     -Weffc++                   \
     -Wredundant-decls          \
-    -Wmissing-declarations     \
     -Wall                      \
     -Wextra                    \
     -Wshadow                   \

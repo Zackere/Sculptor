@@ -8,6 +8,7 @@
 #include <string_view>
 #include <vector>
 
+#include "../external/lodepng/lodepng.cpp"
 #include "../include/sculpting_material.hpp"
 #include "GL/glew.h"
 #include "GLFW/glfw3.h"
@@ -119,7 +120,7 @@ Sculptor::~Sculptor() {
 
 int Sculptor::Main() {
   GLFWwindow* window;
-  constexpr float wWidth = 640.f, wHeight = 480.f;
+  constexpr float wWidth = 1280.f, wHeight = 960.f;
   window = glfwCreateWindow(static_cast<int>(wWidth), static_cast<int>(wHeight),
                             "Sculptor", nullptr, nullptr);
   if (!window)
@@ -128,14 +129,17 @@ int Sculptor::Main() {
   glfwMakeContextCurrent(window);
   if (glewInit() != GLEW_OK)
     return -1;
+
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LESS);
+  glEnable(GL_CULL_FACE);
+  glCullFace(GL_BACK);
 
   GLuint VertexArrayID;
   glGenVertexArrays(1, &VertexArrayID);
   glBindVertexArray(VertexArrayID);
 
-  constexpr float side_len = 50;
+  constexpr float side_len = 70;
   SculptingMaterial material(SculptingMaterial::MaterialType::CUBE,
                              SculptingMaterial::InitialShape::CUBE, side_len);
   GLuint vertexbuffer;
@@ -144,12 +148,35 @@ int Sculptor::Main() {
   glBufferData(GL_ARRAY_BUFFER,
                material.GetVerticiesProperty().size() * 3 * sizeof(float),
                material.GetVerticiesProperty().data(), GL_STATIC_DRAW);
+  GLuint uvbuffer;
+  glGenBuffers(1, &uvbuffer);
+  glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
+  glBufferData(GL_ARRAY_BUFFER,
+               material.GetUVSProperty().size() * 2 * sizeof(float),
+               material.GetUVSProperty().data(), GL_STATIC_DRAW);
   GLuint normalbuffer;
   glGenBuffers(1, &normalbuffer);
   glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
   glBufferData(GL_ARRAY_BUFFER,
                material.GetNormalsProperty().size() * 3 * sizeof(float),
                material.GetNormalsProperty().data(), GL_STATIC_DRAW);
+
+  std::vector<unsigned char> image;  // the raw pixels
+  unsigned width, height;
+  unsigned error = lodepng::decode(image, width, height,
+                                   "../Sculptor/models/CubeTexture.png");
+  if (error)
+    std::cerr << "decoder error " << error << ": " << lodepng_error_text(error)
+              << std::endl;
+
+  GLuint textureID;
+  glGenTextures(1, &textureID);
+  glBindTexture(GL_TEXTURE_2D, textureID);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
+               GL_UNSIGNED_BYTE, image.data());
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
   auto programID =
       LoadShaders("../Sculptor/shaders/SimpleVertexShader.vertexshader",
                   "../Sculptor/shaders/SimpleFragmentShader.fragmentshader");
@@ -157,7 +184,7 @@ int Sculptor::Main() {
   glm::mat4 Projection = glm::perspective(
       glm::radians(45.0f), (float)wWidth / (float)wHeight, 0.1f, 100.0f);
   glm::mat4 View =
-      glm::lookAt(glm::vec3(3, 0, 0), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+      glm::lookAt(glm::vec3(4, 0, 0), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
   auto vp = Projection * View;
   GLuint MatrixID = glGetUniformLocation(programID, "mvp");
 
@@ -165,15 +192,19 @@ int Sculptor::Main() {
   glClearColor(44.0f / 255.0f, 219.0f / 255.0f, 216.0f / 255.0f, 0.0f);
   do {
     if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-      vp = glm::rotate(vp, -0.1f, glm::vec3(0, 1, 0));
+      vp = glm::rotate(vp, -0.01f, glm::vec3(0, 1, 0));
     else if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-      vp = glm::rotate(vp, 0.1f, glm::vec3(0, 1, 0));
+      vp = glm::rotate(vp, 0.01f, glm::vec3(0, 1, 0));
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+    glEnableVertexAttribArray(1);
+    glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
 
     glEnableVertexAttribArray(2);
     glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);

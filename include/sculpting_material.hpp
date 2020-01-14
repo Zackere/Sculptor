@@ -20,6 +20,7 @@ class SculptingMaterial {
                     int size);
   void Reset(InitialShape new_shape, int size);
   std::vector<glm::vec3> const& GetVerticiesProperty() const;
+  std::vector<glm::vec2> const& GetUVSProperty() const;
   std::vector<glm::vec3> const& GetNormalsProperty() const;
 
  private:
@@ -30,7 +31,7 @@ class SculptingMaterial {
   } reference_model_;
   struct {
     std::vector<glm::vec3> verticies = {};
-    /* std::vector<glm::vec2> uvs = {}; */
+    std::vector<glm::vec2> uvs = {};
     std::vector<glm::vec3> normals = {};
     std::vector<glm::vec3> offsets = {};
   } material_;

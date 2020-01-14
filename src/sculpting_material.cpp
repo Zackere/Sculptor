@@ -1,6 +1,8 @@
 #include "../include/sculpting_material.hpp"
 
+#include <algorithm>
 #include <iostream>
+#include <iterator>
 #include <string_view>
 
 namespace Sculptor {
@@ -123,22 +125,31 @@ SculptingMaterial::SculptingMaterial(MaterialType material_type,
 void SculptingMaterial::Reset(InitialShape new_shape, int size) {
   material_.verticies.clear();
   material_.normals.clear();
+  material_.offsets.clear();
+
   material_.verticies.reserve(reference_model_.verticies.size() * size * size *
                               size);
-  material_.verticies.reserve(reference_model_.normals.size() * size * size *
-                              size);
+  material_.uvs.reserve(reference_model_.uvs.size() * size * size * size);
+  material_.normals.reserve(reference_model_.normals.size() * size * size *
+                            size);
   material_.offsets.reserve(size * size * size);
-  auto half_size = static_cast<float>(size) / 2;
-  auto sizef = static_cast<float>(size);
+
+  auto sizef = static_cast<float>(size - 1);
+  auto scale = 1.f / size;
   switch (new_shape) {
     case InitialShape::CUBE:
-      for (auto x = -half_size; x <= half_size; ++x)
-        for (auto y = -half_size; y <= half_size; ++y)
-          for (auto z = -half_size; z <= half_size; ++z) {
+      for (auto x = -sizef; x < sizef; x += 2)
+        for (auto y = -sizef; y < sizef; y += 2)
+          for (auto z = -sizef; z < sizef; z += 2) {
             material_.offsets.emplace_back(x, y, z);
             for (auto const& vec : reference_model_.verticies)
               material_.verticies.emplace_back(
-                  (vec + material_.offsets.back()) / sizef);
+                  (vec + material_.offsets.back()) * scale);
+            std::copy(reference_model_.normals.begin(),
+                      reference_model_.normals.end(),
+                      std::back_inserter(material_.normals));
+            std::copy(reference_model_.uvs.begin(), reference_model_.uvs.end(),
+                      std::back_inserter(material_.uvs));
           }
       break;
   }
@@ -146,6 +157,10 @@ void SculptingMaterial::Reset(InitialShape new_shape, int size) {
 
 std::vector<glm::vec3> const& SculptingMaterial::GetVerticiesProperty() const {
   return material_.verticies;
+}
+
+std::vector<glm::vec2> const& SculptingMaterial::GetUVSProperty() const {
+  return material_.uvs;
 }
 
 std::vector<glm::vec3> const& SculptingMaterial::GetNormalsProperty() const {
