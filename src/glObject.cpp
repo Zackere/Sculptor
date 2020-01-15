@@ -1,7 +1,5 @@
 #include "../include/glObject.hpp"
 
-#include <iostream>
-
 #include "../include/objloader.hpp"
 #include "../include/shader_loader.hpp"
 

@@ -13,6 +13,7 @@ class Drill : public glObject {
   void NextFrame();
   void MoveBackward();
   void MoveForward();
+  auto const& GetVertices() const { return reference_model_.verticies; }
 
  private:
   glm::vec3 forward_;

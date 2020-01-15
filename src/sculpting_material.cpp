@@ -1,13 +1,9 @@
 #include "../include/sculpting_material.hpp"
 
-#include <algorithm>
 #include <iostream>
-#include <iterator>
 #include <string_view>
 
 #include "../external/lodepng/lodepng.cpp"
-#include "../include/objloader.hpp"
-#include "../include/shader_loader.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 
 namespace Sculptor {

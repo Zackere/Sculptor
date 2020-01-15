@@ -1,14 +1,7 @@
 #include "../include/sculptor.hpp"
 
-#include <cstdio>
-#include <fstream>
-#include <iostream>
-#include <sstream>
-#include <string>
-#include <string_view>
-#include <vector>
-
 #include "../include/drill.hpp"
+#include "../include/kdtree.hpp"
 #include "../include/sculpting_material.hpp"
 #include "GL/glew.h"
 #include "GLFW/glfw3.h"
@@ -45,15 +38,16 @@ int Sculptor::Main() {
   glGenVertexArrays(1, &VertexArrayID);
   glBindVertexArray(VertexArrayID);
 
-  constexpr float side_len = 10;
+  constexpr float side_len = 20;
   SculptingMaterial material(SculptingMaterial::MaterialType::CUBE,
                              SculptingMaterial::InitialShape::CUBE, side_len);
   Drill drill;
+  KdTree collider;
 
   glm::mat4 projection = glm::perspective(
       glm::radians(45.0f), static_cast<float>(wWidth) / wHeight, 0.1f, 100.0f);
   glm::mat4 view =
-      glm::lookAt(glm::vec3(8, 0, 8), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+      glm::lookAt(glm::vec3(4, 0, 4), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
   auto vp = projection * view;
   glBindBuffer(GL_ARRAY_BUFFER, material.GetMaterialElementsBuffer());
 

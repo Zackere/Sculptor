@@ -1,5 +1,6 @@
 #include "../include/objloader.hpp"
 
+#include <cstring>
 #include <iostream>
 
 namespace OBJLoader {
