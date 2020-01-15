@@ -8,9 +8,8 @@
 #include <string_view>
 #include <vector>
 
-#include "../external/lodepng/lodepng.cpp"
+#include "../include/drill.hpp"
 #include "../include/sculpting_material.hpp"
-#include "../include/shader_loader.hpp"
 #include "GL/glew.h"
 #include "GLFW/glfw3.h"
 #include "glm/glm.hpp"
@@ -27,7 +26,7 @@ Sculptor::~Sculptor() {
 
 int Sculptor::Main() {
   GLFWwindow* window;
-  constexpr float wWidth = 1280.f, wHeight = 960.f;
+  constexpr auto wWidth = 1280.f, wHeight = 960.f;
   window = glfwCreateWindow(static_cast<int>(wWidth), static_cast<int>(wHeight),
                             "Sculptor", nullptr, nullptr);
   if (!window)
@@ -46,39 +45,17 @@ int Sculptor::Main() {
   glGenVertexArrays(1, &VertexArrayID);
   glBindVertexArray(VertexArrayID);
 
-  constexpr float side_len = 5;
+  constexpr float side_len = 10;
   SculptingMaterial material(SculptingMaterial::MaterialType::CUBE,
                              SculptingMaterial::InitialShape::CUBE, side_len);
+  Drill drill;
 
-  std::vector<unsigned char> image;  // the raw pixels
-  unsigned width, height;
-  unsigned error = lodepng::decode(image, width, height,
-                                   "../Sculptor/models/CubeTexture.png");
-  if (error)
-    std::cerr << "decoder error " << error << ": " << lodepng_error_text(error)
-              << std::endl;
-
-  GLuint textureID;
-  glGenTextures(1, &textureID);
-  glBindTexture(GL_TEXTURE_2D, textureID);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
-               GL_UNSIGNED_BYTE, image.data());
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-  auto programID = ShaderLoader::Load(
-      "../Sculptor/shaders/SimpleVertexShader.vertexshader",
-      "../Sculptor/shaders/SimpleFragmentShader.fragmentshader");
-
-  glm::mat4 Projection = glm::perspective(
+  glm::mat4 projection = glm::perspective(
       glm::radians(45.0f), static_cast<float>(wWidth) / wHeight, 0.1f, 100.0f);
-  glm::mat4 View =
-      glm::lookAt(glm::vec3(4, 0, 0), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
-  auto vp = Projection * View;
-  GLuint MatrixID = glGetUniformLocation(programID, "mvp");
-  GLuint OffsetsID = glGetAttribLocation(programID, "offset");
+  glm::mat4 view =
+      glm::lookAt(glm::vec3(8, 0, 8), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+  auto vp = projection * view;
   glBindBuffer(GL_ARRAY_BUFFER, material.GetMaterialElementsBuffer());
-  glVertexAttribDivisor(OffsetsID, 1);
 
   glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
   glClearColor(44.0f / 255.0f, 219.0f / 255.0f, 216.0f / 255.0f, 0.0f);
@@ -88,32 +65,22 @@ int Sculptor::Main() {
   material.RemoveAt(5);
   do {
     if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-      vp = glm::rotate(vp, -0.01f, glm::vec3(0, 1, 0));
+      material.Rotate(-0.01f);
     else if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-      vp = glm::rotate(vp, 0.01f, glm::vec3(0, 1, 0));
+      material.Rotate(0.01f);
+    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+      drill.MoveForward();
+    else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+      drill.MoveBackward();
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, material.GetVerticiesBuffer());
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+    material.Enable();
+    material.Render(vp);
 
-    glEnableVertexAttribArray(1);
-    glBindBuffer(GL_ARRAY_BUFFER, material.GetUVBuffer());
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
-
-    glEnableVertexAttribArray(2);
-    glBindBuffer(GL_ARRAY_BUFFER, material.GetNormalsBuffer());
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-
-    glEnableVertexAttribArray(OffsetsID);
-    glBindBuffer(GL_ARRAY_BUFFER, material.GetMaterialElementsBuffer());
-    glVertexAttribPointer(OffsetsID, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-
-    glUseProgram(programID);
-    glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &vp[0][0]);
-    glDrawArraysInstanced(GL_TRIANGLES, 0, material.GetNVertices(),
-                          material.GetMaterialElements().size());
+    drill.NextFrame();
+    drill.Enable();
+    drill.Render(vp);
 
     glDisableVertexAttribArray(0);
 

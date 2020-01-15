@@ -2,18 +2,18 @@
 
 #include <vector>
 
+#include "./glObject.hpp"
 #include "GL/glew.h"
 #include "glm/glm.hpp"
 
 namespace Sculptor {
-class SculptingMaterial {
+class SculptingMaterial : public glObject {
  public:
   enum class InitialShape {
     CUBE,
   };
   enum class MaterialType {
     CUBE,
-    SPHERE,
   };
 
   SculptingMaterial(MaterialType material_type,
@@ -21,26 +21,19 @@ class SculptingMaterial {
                     int size);
   void Reset(InitialShape new_shape, int size);
 
-  auto GetVerticiesBuffer() const { return reference_model_gl_.verticies; }
-  auto GetUVBuffer() const { return reference_model_gl_.uvs; }
-  auto GetNormalsBuffer() const { return reference_model_gl_.normals; }
-  auto GetIndices() const { return reference_model_gl_.verticies; }
-  auto GetNVertices() const { return reference_model_.verticies.size(); }
-  auto const& GetMaterialElements() const { return offsets; }
-  auto GetMaterialElementsBuffer() const { return offsets_buffer; }
+  auto GetMaterialElements() const { return offsets_; }
+  auto GetMaterialElementsBuffer() const { return offsets_buffer_; }
+  auto GetTexture() const { return texture_; }
 
   void RemoveAt(unsigned index);
+  void Rotate(float amount);
+
+  void Enable() const override;
+  void Render(glm::mat4 const& vp) const override;
 
  private:
-  struct {
-    std::vector<glm::vec3> verticies = {};
-    std::vector<glm::vec2> uvs = {};
-    std::vector<glm::vec3> normals = {};
-  } reference_model_;
-  struct {
-    GLuint verticies = 0, uvs = 0, normals = 0;
-  } reference_model_gl_;
-  std::vector<glm::vec3> offsets = {};
-  GLuint offsets_buffer = 0;
+  std::vector<glm::vec3> offsets_ = {};
+  GLuint offsets_buffer_ = 0;
+  GLuint texture_ = 0;
 };
 }  // namespace Sculptor
