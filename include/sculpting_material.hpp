@@ -21,11 +21,13 @@ class SculptingMaterial {
                     int size);
   void Reset(InitialShape new_shape, int size);
 
-  auto GetVerticiesBuffer() const { return material_.verticies; }
-  auto GetUVBuffer() const { return material_.uvs; }
-  auto GetNormalsBuffer() const { return material_.normals; }
-  auto GetNVerticies() const { return nverticies_; }
-  auto const& GetMaterialElements() const { return material_.offsets; }
+  auto GetVerticiesBuffer() const { return reference_model_gl_.verticies; }
+  auto GetUVBuffer() const { return reference_model_gl_.uvs; }
+  auto GetNormalsBuffer() const { return reference_model_gl_.normals; }
+  auto GetIndices() const { return reference_model_gl_.verticies; }
+  auto GetNVertices() const { return reference_model_.verticies.size(); }
+  auto const& GetMaterialElements() const { return offsets; }
+  auto GetMaterialElementsBuffer() const { return offsets_buffer; }
 
   void RemoveAt(unsigned index);
 
@@ -37,8 +39,8 @@ class SculptingMaterial {
   } reference_model_;
   struct {
     GLuint verticies = 0, uvs = 0, normals = 0;
-    std::vector<glm::vec3> offsets = {};
-  } material_;
-  GLsizei nverticies_ = 0;
+  } reference_model_gl_;
+  std::vector<glm::vec3> offsets = {};
+  GLuint offsets_buffer = 0;
 };
 }  // namespace Sculptor
