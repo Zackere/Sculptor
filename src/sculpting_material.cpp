@@ -142,9 +142,8 @@ void SculptingMaterial::Enable() const {
 
 void SculptingMaterial::Render(glm::mat4 const& vp) const {
   glUseProgram(GetShader());
-  auto mvpCube = vp * GetModelMatrix();
   glUniformMatrix4fv(glGetUniformLocation(GetShader(), "mvp"), 1, GL_FALSE,
-                     &mvpCube[0][0]);
+                     &vp[0][0]);
   glBindTexture(GL_TEXTURE_2D, GetTexture());
   glDrawArraysInstanced(GL_TRIANGLES, 0, GetNVertices(),
                         GetMaterialElements().size());

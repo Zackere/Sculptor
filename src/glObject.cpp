@@ -46,9 +46,8 @@ void glObject::Enable() const {
 
 void glObject::Render(glm::mat4 const& vp) const {
   glUseProgram(GetShader());
-  auto mvp = vp * GetModelMatrix();
   glUniformMatrix4fv(glGetUniformLocation(GetShader(), "mvp"), 1, GL_FALSE,
-                     &mvp[0][0]);
+                     &vp[0][0]);
   glDrawArrays(GL_TRIANGLES, 0, reference_model_.verticies.size());
 }
 }  // namespace Sculptor

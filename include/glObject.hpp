@@ -19,7 +19,6 @@ class glObject {
   auto GetNormalsBuffer() const { return reference_model_gl_.normals; }
   auto GetNVertices() const { return reference_model_.verticies.size(); }
   auto GetShader() const { return shader_; }
-  auto const& GetModelMatrix() const { return model_matrix_; }
 
   virtual void Enable() const;
   virtual void Render(glm::mat4 const& vp) const;
@@ -34,6 +33,5 @@ class glObject {
     GLuint verticies = 0, uvs = 0, normals = 0;
   } reference_model_gl_ = {};
   GLuint shader_ = 0;
-  glm::mat4 model_matrix_ = glm::mat4(1.f);
 };
 }  // namespace Sculptor
