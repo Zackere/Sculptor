@@ -1,7 +1,10 @@
 #include "../include/glObject.hpp"
 
+#include "../include/matrix_applier.hpp"
 #include "../include/objloader.hpp"
 #include "../include/shader_loader.hpp"
+#include "glm/gtc/matrix_inverse.hpp"
+#include "glm/gtc/matrix_transform.hpp"
 
 namespace Sculptor {
 glObject::glObject(std::string_view model_path,
@@ -49,5 +52,19 @@ void glObject::Render(glm::mat4 const& vp) const {
   glUniformMatrix4fv(glGetUniformLocation(GetShader(), "mvp"), 1, GL_FALSE,
                      &vp[0][0]);
   glDrawArrays(GL_TRIANGLES, 0, reference_model_.verticies.size());
+}
+
+void glObject::Transform(glm::mat4 const& m) {
+  MatrixApplier::Apply(&reference_model_.verticies, m);
+  glBindBuffer(GL_ARRAY_BUFFER, reference_model_gl_.verticies);
+  glBufferData(GL_ARRAY_BUFFER,
+               reference_model_.verticies.size() * 3 * sizeof(float),
+               reference_model_.verticies.data(), GL_STATIC_DRAW);
+  MatrixApplier::Apply(&reference_model_.normals,
+                       glm::transpose(glm::inverse(m)));
+  glBindBuffer(GL_ARRAY_BUFFER, reference_model_gl_.normals);
+  glBufferData(GL_ARRAY_BUFFER,
+               reference_model_.normals.size() * 3 * sizeof(float),
+               reference_model_.normals.data(), GL_STATIC_DRAW);
 }
 }  // namespace Sculptor

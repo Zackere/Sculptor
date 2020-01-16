@@ -22,6 +22,7 @@ class glObject {
 
   virtual void Enable() const;
   virtual void Render(glm::mat4 const& vp) const;
+  virtual void Transform(glm::mat4 const& m);
 
  protected:
   struct {

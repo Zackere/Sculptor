@@ -30,6 +30,7 @@ class SculptingMaterial : public glObject {
 
   void Enable() const override;
   void Render(glm::mat4 const& vp) const override;
+  void Transform(glm::mat4 const& m) override;
 
  private:
   std::vector<glm::vec3> offsets_ = {};

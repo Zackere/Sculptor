@@ -57,13 +57,7 @@ SculptingMaterial::SculptingMaterial(MaterialType material_type,
   glVertexAttribDivisor(glGetAttribLocation(GetShader(), "offset"), 1);
 
   const auto scale = 1.f / size;
-  MatrixApplier::Apply(
-      reference_model_.verticies.data(), reference_model_.verticies.size(),
-      glm::scale(glm::mat4(1.f), glm::vec3(scale, scale, scale)));
-  glBindBuffer(GL_ARRAY_BUFFER, reference_model_gl_.verticies);
-  glBufferData(GL_ARRAY_BUFFER,
-               reference_model_.verticies.size() * 3 * sizeof(float),
-               reference_model_.verticies.data(), GL_STATIC_DRAW);
+  Transform(glm::scale(glm::mat4(1.f), glm::vec3(scale, scale, scale)));
 
   std::vector<unsigned char> image;  // the raw pixels
   unsigned width, height;
@@ -84,14 +78,18 @@ SculptingMaterial::SculptingMaterial(MaterialType material_type,
 
 void SculptingMaterial::Reset(InitialShape new_shape, int size) {
   const auto step = 2.f / size;
-  const auto start = step / 2 - 1;
+  const auto start = step / 2 - 1, stop = -start;
   switch (new_shape) {
     case InitialShape::CUBE:
-      for (auto x = start; x < 1.f; x += step)
+      offsets_.clear();
+      offsets_.reserve(2 * size * size);
+      for (auto x : {start, stop})
         for (auto y = start; y < 1.f; y += step)
-          for (auto z = start; z < 1.f; z += step)
+          for (auto z = start; z < 1.f; z += step) {
             offsets_.emplace_back(x, y, z);
-
+            offsets_.emplace_back(y, x, z);
+            offsets_.emplace_back(y, z, x);
+          }
       glBindBuffer(GL_ARRAY_BUFFER, offsets_buffer_);
       glBufferData(GL_ARRAY_BUFFER, offsets_.size() * 3 * sizeof(float),
                    offsets_.data(), GL_STATIC_DRAW);
@@ -118,18 +116,7 @@ void SculptingMaterial::RemoveAt(unsigned index) {
 }
 
 void SculptingMaterial::Rotate(float amount) {
-  MatrixApplier::Apply(offsets_.data(), offsets_.size(),
-                       glm::rotate(glm::mat4(1.f), amount, glm::vec3(0, 1, 0)));
-  glBindBuffer(GL_ARRAY_BUFFER, offsets_buffer_);
-  glBufferData(GL_ARRAY_BUFFER, offsets_.size() * 3 * sizeof(float),
-               offsets_.data(), GL_STATIC_DRAW);
-  MatrixApplier::Apply(reference_model_.verticies.data(),
-                       reference_model_.verticies.size(),
-                       glm::rotate(glm::mat4(1.f), amount, glm::vec3(0, 1, 0)));
-  glBindBuffer(GL_ARRAY_BUFFER, reference_model_gl_.verticies);
-  glBufferData(GL_ARRAY_BUFFER,
-               reference_model_.verticies.size() * 3 * sizeof(float),
-               reference_model_.verticies.data(), GL_STATIC_DRAW);
+  Transform(glm::rotate(glm::mat4(1.f), amount, glm::vec3(0, 1, 0)));
 }
 
 void SculptingMaterial::Enable() const {
@@ -147,5 +134,13 @@ void SculptingMaterial::Render(glm::mat4 const& vp) const {
   glBindTexture(GL_TEXTURE_2D, GetTexture());
   glDrawArraysInstanced(GL_TRIANGLES, 0, GetNVertices(),
                         GetMaterialElements().size());
+}
+
+void SculptingMaterial::Transform(glm::mat4 const& m) {
+  glObject::Transform(m);
+  MatrixApplier::Apply(&offsets_, m);
+  glBindBuffer(GL_ARRAY_BUFFER, offsets_buffer_);
+  glBufferData(GL_ARRAY_BUFFER, offsets_.size() * 3 * sizeof(float),
+               offsets_.data(), GL_STATIC_DRAW);
 }
 }  // namespace Sculptor

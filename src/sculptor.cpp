@@ -37,7 +37,7 @@ int Sculptor::Main() {
   glGenVertexArrays(1, &VertexArrayID);
   glBindVertexArray(VertexArrayID);
 
-  constexpr float side_len = 50;
+  constexpr float side_len = 300;
   SculptingMaterial material(SculptingMaterial::MaterialType::CUBE,
                              SculptingMaterial::InitialShape::CUBE, side_len);
   Drill drill;
@@ -46,16 +46,15 @@ int Sculptor::Main() {
   glm::mat4 projection = glm::perspective(
       glm::radians(45.0f), static_cast<float>(wWidth) / wHeight, 0.1f, 100.0f);
   glm::mat4 view =
-      glm::lookAt(glm::vec3(4, 0, 4), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+      glm::lookAt(glm::vec3(3, 0, 3), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
   auto vp = projection * view;
   glBindBuffer(GL_ARRAY_BUFFER, material.GetMaterialElementsBuffer());
 
   glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
   glClearColor(44.0f / 255.0f, 219.0f / 255.0f, 216.0f / 255.0f, 0.0f);
 
-  material.RemoveAt(0);
-  material.RemoveAt(3);
-  material.RemoveAt(5);
+  for (int i = 0; i < 125; i += 2)
+    material.RemoveAt(i);
   do {
     if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
       material.Rotate(-0.1f);
