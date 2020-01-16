@@ -28,7 +28,6 @@ int Sculptor::Main() {
   glfwMakeContextCurrent(window);
   if (glewInit() != GLEW_OK)
     return -1;
-
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LESS);
   glEnable(GL_CULL_FACE);
@@ -38,7 +37,7 @@ int Sculptor::Main() {
   glGenVertexArrays(1, &VertexArrayID);
   glBindVertexArray(VertexArrayID);
 
-  constexpr float side_len = 20;
+  constexpr float side_len = 50;
   SculptingMaterial material(SculptingMaterial::MaterialType::CUBE,
                              SculptingMaterial::InitialShape::CUBE, side_len);
   Drill drill;
@@ -59,9 +58,9 @@ int Sculptor::Main() {
   material.RemoveAt(5);
   do {
     if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-      material.Rotate(-0.01f);
+      material.Rotate(-0.1f);
     else if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-      material.Rotate(0.01f);
+      material.Rotate(0.1f);
     if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
       drill.MoveForward();
     else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)

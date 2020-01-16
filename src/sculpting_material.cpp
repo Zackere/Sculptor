@@ -4,6 +4,7 @@
 #include <string_view>
 
 #include "../external/lodepng/lodepng.cpp"
+#include "../include/matrix_applier.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 
 namespace Sculptor {
@@ -56,8 +57,9 @@ SculptingMaterial::SculptingMaterial(MaterialType material_type,
   glVertexAttribDivisor(glGetAttribLocation(GetShader(), "offset"), 1);
 
   const auto scale = 1.f / size;
-  for (auto& v : reference_model_.verticies)
-    v *= scale;
+  MatrixApplier::Apply(
+      reference_model_.verticies.data(), reference_model_.verticies.size(),
+      glm::scale(glm::mat4(1.f), glm::vec3(scale, scale, scale)));
   glBindBuffer(GL_ARRAY_BUFFER, reference_model_gl_.verticies);
   glBufferData(GL_ARRAY_BUFFER,
                reference_model_.verticies.size() * 3 * sizeof(float),
@@ -116,7 +118,18 @@ void SculptingMaterial::RemoveAt(unsigned index) {
 }
 
 void SculptingMaterial::Rotate(float amount) {
-  model_matrix_ = glm::rotate(model_matrix_, amount, glm::vec3(0, 1, 0));
+  MatrixApplier::Apply(offsets_.data(), offsets_.size(),
+                       glm::rotate(glm::mat4(1.f), amount, glm::vec3(0, 1, 0)));
+  glBindBuffer(GL_ARRAY_BUFFER, offsets_buffer_);
+  glBufferData(GL_ARRAY_BUFFER, offsets_.size() * 3 * sizeof(float),
+               offsets_.data(), GL_STATIC_DRAW);
+  MatrixApplier::Apply(reference_model_.verticies.data(),
+                       reference_model_.verticies.size(),
+                       glm::rotate(glm::mat4(1.f), amount, glm::vec3(0, 1, 0)));
+  glBindBuffer(GL_ARRAY_BUFFER, reference_model_gl_.verticies);
+  glBufferData(GL_ARRAY_BUFFER,
+               reference_model_.verticies.size() * 3 * sizeof(float),
+               reference_model_.verticies.data(), GL_STATIC_DRAW);
 }
 
 void SculptingMaterial::Enable() const {
