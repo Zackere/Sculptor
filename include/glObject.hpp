@@ -14,17 +14,17 @@ class glObject {
            std::string_view fragment_shader_path);
   virtual ~glObject() = default;
 
-  auto GetVerticiesBuffer() const { return reference_model_gl_.verticies; }
-  auto GetUVBuffer() const { return reference_model_gl_.uvs; }
-  auto GetNormalsBuffer() const { return reference_model_gl_.normals; }
-  auto GetNVertices() const { return reference_model_.verticies.size(); }
-  auto GetShader() const { return shader_; }
-
   virtual void Enable() const;
   virtual void Render(glm::mat4 const& vp) const;
-  virtual void Transform(glm::mat4 const& m);
 
  protected:
+  virtual void Transform(glm::mat4 const& m);
+  auto GetShader() const { return shader_; }
+  auto GetNumberOfReferenceModelVerticies() const {
+    return reference_model_.verticies.size();
+  }
+
+ private:
   struct {
     std::vector<glm::vec3> verticies = {};
     std::vector<glm::vec2> uvs = {};

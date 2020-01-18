@@ -1,14 +1,13 @@
 #pragma once
 
+#include <vector>
+
+#include "glm/glm.hpp"
+
 namespace Sculptor {
-class SculptingMaterial;
-class Drill;
 class KdTree {
  public:
   virtual ~KdTree() = default;
-
-  virtual void Collide(SculptingMaterial* material,
-                       Drill const& drill,
-                       float tolerance);
+  virtual void Construct(std::vector<glm::vec3>& v) = 0;
 };
 }  // namespace Sculptor

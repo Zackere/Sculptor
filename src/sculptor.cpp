@@ -1,7 +1,7 @@
 #include "../include/sculptor.hpp"
 
 #include "../include/drill.hpp"
-#include "../include/kdtree.hpp"
+#include "../include/kdtree_cpu.hpp"
 #include "../include/sculpting_material.hpp"
 #include "GL/glew.h"
 #include "GLFW/glfw3.h"
@@ -37,24 +37,21 @@ int Sculptor::Main() {
   glGenVertexArrays(1, &VertexArrayID);
   glBindVertexArray(VertexArrayID);
 
-  constexpr float side_len = 300;
+  constexpr float side_len = 100;
   SculptingMaterial material(SculptingMaterial::MaterialType::CUBE,
-                             SculptingMaterial::InitialShape::CUBE, side_len);
+                             SculptingMaterial::InitialShape::CUBE, side_len,
+                             std::make_unique<KdTreeCPU>());
   Drill drill;
-  KdTree collider;
 
   glm::mat4 projection = glm::perspective(
       glm::radians(45.0f), static_cast<float>(wWidth) / wHeight, 0.1f, 100.0f);
   glm::mat4 view =
       glm::lookAt(glm::vec3(3, 0, 3), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
   auto vp = projection * view;
-  glBindBuffer(GL_ARRAY_BUFFER, material.GetMaterialElementsBuffer());
 
   glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
   glClearColor(44.0f / 255.0f, 219.0f / 255.0f, 216.0f / 255.0f, 0.0f);
 
-  for (int i = 0; i < 125; i += 2)
-    material.RemoveAt(i);
   do {
     if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
       material.Rotate(-0.1f);

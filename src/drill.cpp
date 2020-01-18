@@ -32,6 +32,6 @@ void Drill::MoveBackward() {
 }
 
 void Drill::NextFrame() {
-  Transform(glm::rotate(glm::mat4(1.f), 0.01f, forward_));
+  Transform(glm::rotate(glm::mat4(1.f), 0.1f, forward_));
 }
 }  // namespace Sculptor

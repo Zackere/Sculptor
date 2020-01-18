@@ -37,18 +37,18 @@ void __global__ ApplyKernel(float* vectors, int size) {
 }
 }  // namespace
 
-void Apply(std::vector<glm::vec3>* vectors, glm::mat4 matrix) {
+void Apply(std::vector<glm::vec3>& vectors, glm::mat4 matrix) {
   thrust::device_vector<glm::vec3> d_vectors;
-  auto extra_space = vectors->size() % (kThreads * kBlocks);
+  auto extra_space = vectors.size() % (kThreads * kBlocks);
   if (extra_space != 0)
     extra_space = kThreads * kBlocks - extra_space;
-  d_vectors.resize(vectors->size() + extra_space);
-  thrust::copy(vectors->begin(), vectors->end(), d_vectors.begin());
+  d_vectors.resize(vectors.size() + extra_space);
+  thrust::copy(vectors.begin(), vectors.end(), d_vectors.begin());
   cudaMemcpyToSymbol(c_matrix, &matrix, sizeof(c_matrix), 0);
   ApplyKernel<<<kBlocks, kThreads>>>(
       reinterpret_cast<float*>(d_vectors.data().get()), 3 * d_vectors.size());
   cudaDeviceSynchronize();
-  d_vectors.resize(vectors->size());
-  thrust::copy(d_vectors.begin(), d_vectors.end(), vectors->begin());
+  d_vectors.resize(vectors.size());
+  thrust::copy(d_vectors.begin(), d_vectors.end(), vectors.begin());
 }
 }  // namespace MatrixApplier

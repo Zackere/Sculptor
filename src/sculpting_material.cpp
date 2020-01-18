@@ -1,9 +1,13 @@
 #include "../include/sculpting_material.hpp"
 
+#include <algorithm>
+#include <execution>
 #include <iostream>
 #include <string_view>
+#include <utility>
 
 #include "../external/lodepng/lodepng.cpp"
+#include "../include/kdtree_cpu.hpp"
 #include "../include/matrix_applier.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 
@@ -46,30 +50,74 @@ constexpr const char* GetTexturePath(SculptingMaterial::MaterialType type) {
       return nullptr;
   }
 }
+
+void InsertHollowCube(int size, std::vector<glm::vec3>& offsets) {
+  if (size <= 0)
+    return;
+  switch (size) {
+    case 1:
+      offsets.emplace_back(0, 0, 0);
+      return;
+    case 2:
+      for (auto x : {-0.5f, 0.5f})
+        for (auto y : {-0.5f, 0.5f})
+          for (auto z : {-0.5f, 0.5f})
+            offsets.emplace_back(x, y, z);
+      return;
+    default:
+      break;
+  }
+  const auto step = 2.f / size;
+  auto start = -1.f + 3 * step / 2;
+  float y, z;
+  for (auto x : {start - step, -start + step}) {
+    y = start;
+    for (int j = 2; j < size; ++j, y += step) {
+      z = start;
+      for (int k = 2; k < size; ++k, z += step) {
+        offsets.emplace_back(x, y, z);
+        offsets.emplace_back(y, x, z);
+        offsets.emplace_back(y, z, x);
+      }
+      offsets.emplace_back(y, x, x);
+      offsets.emplace_back(y, x, -x);
+      offsets.emplace_back(x, y, x);
+      offsets.emplace_back(x, y, -x);
+      offsets.emplace_back(x, x, y);
+      offsets.emplace_back(x, -x, y);
+    }
+    offsets.emplace_back(x, x, x);
+    offsets.emplace_back(-x, x, x);
+    offsets.emplace_back(x, -x, x);
+    offsets.emplace_back(x, x, -x);
+  }
+}
 }  // namespace
 SculptingMaterial::SculptingMaterial(MaterialType material_type,
                                      InitialShape initial_shape,
-                                     int size)
+                                     int size,
+                                     std::unique_ptr<KdTree> kd_tree)
     : glObject(GetModelPath(material_type),
                GetVertexShaderPath(material_type),
-               GetFragmentShaderPath(material_type)) {
-  glGenBuffers(1, &offsets_buffer_);
+               GetFragmentShaderPath(material_type)),
+      kd_tree_(std::move(kd_tree)) {
+  glGenBuffers(1, &visible_instances_positions_buffer_);
   glVertexAttribDivisor(glGetAttribLocation(GetShader(), "offset"), 1);
 
   const auto scale = 1.f / size;
   Transform(glm::scale(glm::mat4(1.f), glm::vec3(scale, scale, scale)));
 
-  std::vector<unsigned char> image;  // the raw pixels
+  std::vector<unsigned char> image_raw;
   unsigned width, height;
   unsigned error =
-      lodepng::decode(image, width, height, GetTexturePath(material_type));
+      lodepng::decode(image_raw, width, height, GetTexturePath(material_type));
   if (error)
     std::cerr << "decoder error " << error << ": " << lodepng_error_text(error)
               << std::endl;
   glGenTextures(1, &texture_);
   glBindTexture(GL_TEXTURE_2D, texture_);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
-               GL_UNSIGNED_BYTE, image.data());
+               GL_UNSIGNED_BYTE, image_raw.data());
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
@@ -77,42 +125,29 @@ SculptingMaterial::SculptingMaterial(MaterialType material_type,
 }
 
 void SculptingMaterial::Reset(InitialShape new_shape, int size) {
-  const auto step = 2.f / size;
-  const auto start = step / 2 - 1, stop = -start;
+  visible_instances_positions_.clear();
+  invisible_instances_positions_.clear();
   switch (new_shape) {
     case InitialShape::CUBE:
-      offsets_.clear();
-      offsets_.reserve(2 * size * size);
-      for (auto x : {start, stop})
-        for (auto y = start; y < 1.f; y += step)
-          for (auto z = start; z < 1.f; z += step) {
-            offsets_.emplace_back(x, y, z);
-            offsets_.emplace_back(y, x, z);
-            offsets_.emplace_back(y, z, x);
-          }
-      glBindBuffer(GL_ARRAY_BUFFER, offsets_buffer_);
-      glBufferData(GL_ARRAY_BUFFER, offsets_.size() * 3 * sizeof(float),
-                   offsets_.data(), GL_STATIC_DRAW);
+      if (size <= 0)
+        return;
+      if (size == 1) {
+        InsertHollowCube(size, visible_instances_positions_);
+        return;
+      }
+      visible_instances_positions_.reserve(6 * size * (size - 2) +
+                                           8);  // size ^ 3 - (size - 2) ^ 3
+      InsertHollowCube(size, visible_instances_positions_);
+      invisible_instances_positions_.reserve((size - 2) * (size - 2) *
+                                             (size - 2));
+      for (int i = size - 2; i > 0; i -= 2)
+        InsertHollowCube(i, invisible_instances_positions_);
       break;
   }
-}
-
-void SculptingMaterial::RemoveAt(unsigned index) {
-  if (index >= offsets_.size()) {
-    std::cerr << "Index is out of bounds : index: " << index << std::endl;
-    return;
-  }
-  if (offsets_.empty())
-    return;
-  if (index + 1 < offsets_.size()) {
-    offsets_[index] = offsets_.back();
-    glBindBuffer(GL_ARRAY_BUFFER, offsets_buffer_);
-    auto* p = reinterpret_cast<glm::vec3*>(
-        glMapBuffer(GL_ARRAY_BUFFER, GL_READ_WRITE));
-    p[index] = p[offsets_.size() - 1];
-    glUnmapBuffer(GL_ARRAY_BUFFER);
-  }
-  offsets_.pop_back();
+  glBindBuffer(GL_ARRAY_BUFFER, visible_instances_positions_buffer_);
+  glBufferData(GL_ARRAY_BUFFER,
+               visible_instances_positions_.size() * 3 * sizeof(float),
+               visible_instances_positions_.data(), GL_STATIC_DRAW);
 }
 
 void SculptingMaterial::Rotate(float amount) {
@@ -123,7 +158,7 @@ void SculptingMaterial::Enable() const {
   glObject::Enable();
   auto materialOffsetsID = glGetAttribLocation(GetShader(), "offset");
   glEnableVertexAttribArray(materialOffsetsID);
-  glBindBuffer(GL_ARRAY_BUFFER, GetMaterialElementsBuffer());
+  glBindBuffer(GL_ARRAY_BUFFER, visible_instances_positions_buffer_);
   glVertexAttribPointer(materialOffsetsID, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 }
 
@@ -131,16 +166,17 @@ void SculptingMaterial::Render(glm::mat4 const& vp) const {
   glUseProgram(GetShader());
   glUniformMatrix4fv(glGetUniformLocation(GetShader(), "mvp"), 1, GL_FALSE,
                      &vp[0][0]);
-  glBindTexture(GL_TEXTURE_2D, GetTexture());
-  glDrawArraysInstanced(GL_TRIANGLES, 0, GetNVertices(),
-                        GetMaterialElements().size());
+  glBindTexture(GL_TEXTURE_2D, texture_);
+  glDrawArraysInstanced(GL_TRIANGLES, 0, GetNumberOfReferenceModelVerticies(),
+                        visible_instances_positions_.size());
 }
 
 void SculptingMaterial::Transform(glm::mat4 const& m) {
   glObject::Transform(m);
-  MatrixApplier::Apply(&offsets_, m);
-  glBindBuffer(GL_ARRAY_BUFFER, offsets_buffer_);
-  glBufferData(GL_ARRAY_BUFFER, offsets_.size() * 3 * sizeof(float),
-               offsets_.data(), GL_STATIC_DRAW);
+  MatrixApplier::Apply(visible_instances_positions_, m);
+  glBindBuffer(GL_ARRAY_BUFFER, visible_instances_positions_buffer_);
+  glBufferData(GL_ARRAY_BUFFER,
+               visible_instances_positions_.size() * 3 * sizeof(float),
+               visible_instances_positions_.data(), GL_STATIC_DRAW);
 }
 }  // namespace Sculptor
