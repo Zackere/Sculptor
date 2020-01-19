@@ -40,6 +40,6 @@ class SculptingMaterial : public glObject {
   GLuint texture_ = 0;
   std::unique_ptr<KdTree> kd_tree_ = nullptr;
   float side_len_ = 0;
-  glm::vec4 forward_ = {1, 0, 0, 0};
+  float angle_ = 0;
 };
 }  // namespace Sculptor

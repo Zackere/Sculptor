@@ -55,23 +55,22 @@ constexpr const char* GetTexturePath(SculptingMaterial::MaterialType type) {
   }
 }
 
-void InsertHollowCube(int size, std::vector<glm::vec3>& offsets, float step) {
-  if (size <= 0)
+void InsertHollowCube(int ncubes,
+                      std::vector<glm::vec3>& offsets,
+                      float side_len) {
+  if (ncubes <= 0)
     return;
-  switch (size) {
-    case 1:
-      offsets.emplace_back(0, 0, 0);
-      return;
-    default:
-      break;
+  if (ncubes == 1) {
+    offsets.emplace_back(0, 0, 0);
+    return;
   }
-  auto start = step * (3 - size) / 2;
+  auto start = -(ncubes - 3) * side_len / 2;
   float y, z;
-  for (auto x : {start - step, -start + step}) {
+  for (auto x : {start - side_len, -start + side_len}) {
     y = start;
-    for (int j = 2; j < size; ++j, y += step) {
+    for (int j = 2; j < ncubes; ++j, y += side_len) {
       z = start;
-      for (int k = 2; k < size; ++k, z += step) {
+      for (int k = 2; k < ncubes; ++k, z += side_len) {
         offsets.emplace_back(x, y, z);
         offsets.emplace_back(y, x, z);
         offsets.emplace_back(y, z, x);
@@ -123,7 +122,7 @@ SculptingMaterial::SculptingMaterial(MaterialType material_type,
 
 void SculptingMaterial::Reset(InitialShape new_shape, int size) {
   side_len_ = 2.f / size;
-  forward_ = {side_len_, 0, 0, 0};
+  angle_ = 0;
   visible_instances_positions_.clear();
   invisible_instances_positions_.clear();
   switch (new_shape) {
@@ -152,7 +151,11 @@ void SculptingMaterial::Reset(InitialShape new_shape, int size) {
 void SculptingMaterial::Rotate(float amount) {
   auto m = glm::rotate(glm::mat4(1.f), amount, glm::vec3(0, 1, 0));
   Transform(m);
-  forward_ = m * forward_;
+  angle_ += amount;
+  while (angle_ >= glm::two_pi<float>())
+    angle_ -= glm::two_pi<float>();
+  while (angle_ < 0)
+    angle_ += glm::two_pi<float>();
 }
 
 void SculptingMaterial::Collide(Drill const& drill) {
@@ -168,34 +171,33 @@ void SculptingMaterial::Collide(Drill const& drill) {
     if (kd_tree_->GetDistanceToLastFound() < side_len_)
       to_be_removed.insert(p);
   }
+  auto m_back = glm::rotate(glm::mat4(1.f), -angle_, glm::vec3{0, 1, 0});
+  auto m_for = glm::rotate(glm::mat4(1.f), angle_, glm::vec3{0, 1, 0});
   if (t.joinable())
     t.join();
   for (auto i : to_be_removed) {
-    auto& p = visible_instances_positions_[i];
+    auto p = m_back * glm::vec4(visible_instances_positions_[i], 1.f);
 
-    to_be_added.insert(
-        kd_tree_->Find(invisible_instances_positions_,
-                       glm::vec3{p.x + forward_.x, p.y, p.z + forward_.z}));
-    to_be_added.insert(
-        kd_tree_->Find(invisible_instances_positions_,
-                       glm::vec3{p.x - forward_.x, p.y, p.z + forward_.z}));
-    to_be_added.insert(
-        kd_tree_->Find(invisible_instances_positions_,
-                       glm::vec3{p.x + forward_.x, p.y, p.z - forward_.z}));
-    to_be_added.insert(
-        kd_tree_->Find(invisible_instances_positions_,
-                       glm::vec3{p.x - forward_.x, p.y, p.z - forward_.z}));
+    to_be_added.insert(kd_tree_->Find(invisible_instances_positions_,
+                                      glm::vec3{p.x + side_len_, p.y, p.z}));
+    to_be_added.insert(kd_tree_->Find(invisible_instances_positions_,
+                                      glm::vec3{p.x - side_len_, p.y, p.z}));
     to_be_added.insert(kd_tree_->Find(invisible_instances_positions_,
                                       glm::vec3{p.x, p.y + side_len_, p.z}));
     to_be_added.insert(kd_tree_->Find(invisible_instances_positions_,
                                       glm::vec3{p.x, p.y - side_len_, p.z}));
+    to_be_added.insert(kd_tree_->Find(invisible_instances_positions_,
+                                      glm::vec3{p.x, p.y, p.z + side_len_}));
+    to_be_added.insert(kd_tree_->Find(invisible_instances_positions_,
+                                      glm::vec3{p.x, p.y, p.z - side_len_}));
 
-    p = visible_instances_positions_.back();
+    visible_instances_positions_[i] = visible_instances_positions_.back();
     visible_instances_positions_.pop_back();
   }
   to_be_added.erase(-1);
-  for (auto const& i : to_be_added) {
-    visible_instances_positions_.push_back(invisible_instances_positions_[i]);
+  for (auto i : to_be_added) {
+    visible_instances_positions_.push_back(
+        m_for * glm::vec4(invisible_instances_positions_[i], 1.f));
     invisible_instances_positions_[i] = invisible_instances_positions_.back();
     invisible_instances_positions_.pop_back();
   }
@@ -232,6 +234,6 @@ void SculptingMaterial::Transform(glm::mat4 const& m) {
   glBufferData(GL_ARRAY_BUFFER,
                visible_instances_positions_.size() * 3 * sizeof(float),
                visible_instances_positions_.data(), GL_STATIC_DRAW);
-  MatrixApplier::Apply(invisible_instances_positions_, m);
+  // MatrixApplier::Apply(invisible_instances_positions_, m);
 }
 }  // namespace Sculptor

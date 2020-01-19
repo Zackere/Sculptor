@@ -15,7 +15,7 @@ class KdTreeCPU : public KdTree {
 
  private:
   void FindNearestInKd(int begin, int end, int level);
-  int FindInKd(int begin, int end, int level);
+  int FindInKd(int begin, int end, int level) const;
 
   glm::vec3 query_point_ = glm::vec3(0, 0, 0);
   glm::vec3 cur_best_ = glm::vec3(0, 0, 0);

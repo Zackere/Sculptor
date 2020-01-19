@@ -2,7 +2,6 @@
 #include "../include/matrix_applier.hpp"
 #include "cuda.h"
 #include "cuda_runtime_api.h"
-#include "device_functions.h"
 #include "thrust/device_vector.h"
 
 namespace MatrixApplier {

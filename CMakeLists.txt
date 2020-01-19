@@ -34,7 +34,7 @@ set(CMAKE_CXX_FLAGS
     -Wall                      \
     -Wextra                    \
     -Wshadow                   \
-    -O0                        \
+    -O2                        \
     -Wswitch-enum              \
     -Werror                    \
     -Wredundant-decls          \
