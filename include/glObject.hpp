@@ -14,10 +14,14 @@ class glObject {
            std::string_view fragment_shader_path);
   virtual ~glObject() = default;
 
-  virtual void Enable() const;
   virtual void Render(glm::mat4 const& vp) const;
 
+  auto const& GetReferenceModelVertices() const {
+    return reference_model_.verticies;
+  }
+
  protected:
+  virtual void Enable() const;
   virtual void Transform(glm::mat4 const& m);
   auto GetShader() const { return shader_; }
   auto GetNumberOfReferenceModelVerticies() const {

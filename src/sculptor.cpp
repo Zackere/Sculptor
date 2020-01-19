@@ -37,7 +37,7 @@ int Sculptor::Main() {
   glGenVertexArrays(1, &VertexArrayID);
   glBindVertexArray(VertexArrayID);
 
-  constexpr float side_len = 100;
+  constexpr float side_len = 60;
   SculptingMaterial material(SculptingMaterial::MaterialType::CUBE,
                              SculptingMaterial::InitialShape::CUBE, side_len,
                              std::make_unique<KdTreeCPU>());
@@ -54,9 +54,9 @@ int Sculptor::Main() {
 
   do {
     if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-      material.Rotate(-0.1f);
+      material.Rotate(-0.01f);
     else if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-      material.Rotate(0.1f);
+      material.Rotate(0.01f);
     if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
       drill.MoveForward();
     else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
@@ -64,11 +64,10 @@ int Sculptor::Main() {
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    material.Enable();
-    material.Render(vp);
-
+    material.Collide(drill);
     drill.NextFrame();
-    drill.Enable();
+
+    material.Render(vp);
     drill.Render(vp);
 
     glDisableVertexAttribArray(0);

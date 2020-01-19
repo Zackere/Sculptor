@@ -1,8 +1,6 @@
 #pragma once
 
 #include <memory>
-#include <optional>
-#include <thread>
 #include <vector>
 
 #include "../include/kdtree.hpp"
@@ -11,6 +9,8 @@
 #include "glm/glm.hpp"
 
 namespace Sculptor {
+class Drill;
+
 class SculptingMaterial : public glObject {
  public:
   enum class InitialShape {
@@ -24,9 +24,10 @@ class SculptingMaterial : public glObject {
                     InitialShape initial_shape,
                     int size,
                     std::unique_ptr<KdTree> kd_tree);
-  void Reset(InitialShape new_shape, int size);
 
+  void Reset(InitialShape new_shape, int size);
   void Rotate(float amount);
+  void Collide(Drill const& drill);
 
   void Enable() const override;
   void Render(glm::mat4 const& vp) const override;
@@ -38,5 +39,7 @@ class SculptingMaterial : public glObject {
   GLuint visible_instances_positions_buffer_ = 0;
   GLuint texture_ = 0;
   std::unique_ptr<KdTree> kd_tree_ = nullptr;
+  float side_len_ = 0;
+  float angle_ = 0;
 };
 }  // namespace Sculptor
