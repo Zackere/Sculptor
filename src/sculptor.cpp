@@ -37,7 +37,7 @@ int Sculptor::Main() {
   glGenVertexArrays(1, &VertexArrayID);
   glBindVertexArray(VertexArrayID);
 
-  constexpr float side_len = 100;
+  constexpr float side_len = 20;
   SculptingMaterial material(SculptingMaterial::MaterialType::CUBE,
                              SculptingMaterial::InitialShape::CUBE, side_len,
                              std::make_unique<KdTreeCPU>());
@@ -64,11 +64,10 @@ int Sculptor::Main() {
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    material.Enable();
-    material.Render(vp);
-
+    material.Collide(drill);
     drill.NextFrame();
-    drill.Enable();
+
+    material.Render(vp);
     drill.Render(vp);
 
     glDisableVertexAttribArray(0);

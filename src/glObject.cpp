@@ -48,6 +48,7 @@ void glObject::Enable() const {
 }
 
 void glObject::Render(glm::mat4 const& vp) const {
+  Enable();
   glUseProgram(shader_);
   glUniformMatrix4fv(glGetUniformLocation(shader_, "mvp"), 1, GL_FALSE,
                      &vp[0][0]);

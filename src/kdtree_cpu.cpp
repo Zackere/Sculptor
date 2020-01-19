@@ -7,30 +7,135 @@
 namespace Sculptor {
 namespace {
 template <typename RandomIt>
-void construct_kd(RandomIt begin, RandomIt end, int level) {
+void ContructKd(RandomIt begin, RandomIt end, int level) {
   if (end - begin <= 1)
     return;
-  switch (level % 3) {
+  auto mid = begin + (end - begin) / 2;
+  switch (level) {
+    default:
+      throw 0;
     case 0:
-      std::sort(std::execution::par, begin, end,
-                [](auto const& v1, auto const& v2) { return v1.x < v2.x; });
+      std::nth_element(begin, mid, end, [](auto const& v1, auto const& v2) {
+        return v1.x < v2.x;
+      });
+      level = 1;
       break;
     case 1:
-      std::sort(std::execution::par, begin, end,
-                [](auto const& v1, auto const& v2) { return v1.y < v2.y; });
+      std::nth_element(begin, mid, end, [](auto const& v1, auto const& v2) {
+        return v1.y < v2.y;
+      });
+      level = 2;
       break;
     case 2:
-      std::sort(std::execution::par, begin, end,
-                [](auto const& v1, auto const& v2) { return v1.z < v2.z; });
+      std::nth_element(begin, mid, end, [](auto const& v1, auto const& v2) {
+        return v1.z < v2.z;
+      });
+      level = 0;
       break;
   }
-  RandomIt mid = begin + (end - begin) / 2;
-  ++level;
-  construct_kd(begin, mid, level);
-  construct_kd(mid + 1, end, level);
+  ContructKd(begin, mid, level);
+  ContructKd(mid + 1, end, level);
 }
 }  // namespace
 void KdTreeCPU::Construct(std::vector<glm::vec3>& v) {
-  construct_kd(v.begin(), v.end(), 0);
+  ContructKd(v.begin(), v.end(), 0);
+}
+
+int KdTreeCPU::FindNearest(std::vector<glm::vec3> const& kd_tree,
+                           glm::vec3 const& query_point) {
+  query_point_ = query_point;
+  kd_tree_ = &kd_tree;
+  cur_best_index_ = kd_tree.size() / 2;
+  cur_best_distance_ = distance(query_point, kd_tree[cur_best_index_]);
+  FindNearestInKd(0, kd_tree.size(), 0);
+  kd_tree_ = nullptr;
+  return cur_best_index_;
+}
+
+int KdTreeCPU::Find(std::vector<glm::vec3> const& kd_tree,
+                    glm::vec3 const& query_point) {
+  kd_tree_ = &kd_tree;
+  query_point_ = query_point;
+  auto ret = FindInKd(0, kd_tree.size(), 0);
+  kd_tree_ = nullptr;
+  return ret;
+}
+
+void KdTreeCPU::FindNearestInKd(int begin, int end, int level) {
+  auto mid = (begin + end) / 2;
+  float dist_to_mid = glm::distance(query_point_, (*kd_tree_)[mid]);
+  if (dist_to_mid < cur_best_distance_) {
+    cur_best_distance_ = dist_to_mid;
+    cur_best_index_ = mid;
+    cur_best_ = (*kd_tree_)[mid];
+  }
+  if (begin + 1 == end)
+    return;
+  switch (level) {
+    default:
+      throw 0;
+    case 0:
+      if (query_point_.x > (*kd_tree_)[mid].x) {
+        FindNearestInKd(mid, end, 1);
+        if (query_point_.x - (*kd_tree_)[mid].x < cur_best_distance_)
+          FindNearestInKd(begin, mid, 1);
+      } else {
+        FindNearestInKd(begin, mid, 1);
+        if ((*kd_tree_)[mid].x - query_point_.x < cur_best_distance_)
+          FindNearestInKd(mid, end, 1);
+      }
+      break;
+    case 1:
+      if (query_point_.y > (*kd_tree_)[mid].y) {
+        FindNearestInKd(mid, end, 2);
+        if (query_point_.y - (*kd_tree_)[mid].y < cur_best_distance_)
+          FindNearestInKd(begin, mid, 2);
+      } else {
+        FindNearestInKd(begin, mid, 2);
+        if ((*kd_tree_)[mid].y - query_point_.y < cur_best_distance_)
+          FindNearestInKd(mid, end, 2);
+      }
+      break;
+    case 2:
+      if (query_point_.z > (*kd_tree_)[mid].z) {
+        FindNearestInKd(mid, end, 0);
+        if (query_point_.z - (*kd_tree_)[mid].z < cur_best_distance_)
+          FindNearestInKd(begin, mid, 0);
+      } else {
+        FindNearestInKd(begin, mid, 0);
+        if ((*kd_tree_)[mid].z - query_point_.z < cur_best_distance_)
+          FindNearestInKd(mid, end, 0);
+      }
+      break;
+  }
+}
+
+int KdTreeCPU::FindInKd(int begin, int end, int level) {
+  if (begin == end)
+    return -1;
+  auto mid = (begin + end) / 2;
+  if (distance(query_point_, (*kd_tree_)[mid]) < 0.2)
+    return mid;
+  if (begin + 1 == end)
+    return -1;
+  switch (level) {
+    default:
+      throw 0;
+    case 0:
+      if (query_point_.x > (*kd_tree_)[mid].x)
+        return FindInKd(mid, end, 1);
+      else
+        return FindInKd(begin, mid, 1);
+    case 1:
+      if (query_point_.y > (*kd_tree_)[mid].y)
+        return FindInKd(mid, end, 2);
+      else
+        return FindInKd(begin, mid, 2);
+    case 2:
+      if (query_point_.z > (*kd_tree_)[mid].z)
+        return FindInKd(mid, end, 0);
+      else
+        return FindInKd(begin, mid, 0);
+  }
 }
 }  // namespace Sculptor

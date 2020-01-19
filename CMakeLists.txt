@@ -5,7 +5,7 @@ set(CMAKE_COMPILER_IS_GNUCC TRUE)
 file(GLOB source_files  ${CMAKE_SOURCE_DIR}/src/*.cu ${CMAKE_SOURCE_DIR}/src/*.cpp ${CMAKE_SOURCE_DIR}/include/*.hpp)
 add_executable(${PROJECT_NAME} main.cpp ${source_files})
 
-# Intel thread building blocks
+# Intel Thread Building Blocks
 target_link_libraries(${PROJECT_NAME} tbb)
 
 # Cuda
@@ -34,7 +34,7 @@ set(CMAKE_CXX_FLAGS
     -Wall                      \
     -Wextra                    \
     -Wshadow                   \
-    -O2                        \
+    -O0                        \
     -Wswitch-enum              \
     -Werror                    \
     -Wredundant-decls          \
