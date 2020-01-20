@@ -13,8 +13,11 @@ class Drill : public glObject {
   void NextFrame();
   void MoveBackward();
   void MoveForward();
+  void MoveUp();
+  void MoveDown();
 
  private:
   glm::vec3 forward_;
+  glm::vec3 pos_;
 };
 }  // namespace Sculptor

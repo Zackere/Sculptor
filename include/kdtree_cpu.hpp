@@ -7,8 +7,9 @@ class KdTreeCPU : public KdTree {
  public:
   ~KdTreeCPU() override = default;
   void Construct(std::vector<glm::vec3>& v) override;
-  int FindNearest(std::vector<glm::vec3> const& kd_tree,
-                  glm::vec3 const& query_point) override;
+  std::map<int, float, std::greater<int>> FindNearest(
+      std::vector<glm::vec3> const& kd_tree,
+      std::vector<glm::vec3> const& query_points) override;
   int Find(std::vector<glm::vec3> const& kd_tree,
            glm::vec3 const& query_point) override;
   float GetDistanceToLastFound() const override { return cur_best_distance_; }

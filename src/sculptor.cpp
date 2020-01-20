@@ -33,7 +33,7 @@ int Sculptor::Main() {
   glEnable(GL_CULL_FACE);
   glCullFace(GL_BACK);
 
-  constexpr float side_len = 60;
+  constexpr float side_len = 50;
   SculptingMaterial material(SculptingMaterial::MaterialType::CUBE,
                              SculptingMaterial::InitialShape::CUBE, side_len,
                              std::make_unique<KdTreeCPU>());
@@ -53,10 +53,14 @@ int Sculptor::Main() {
       material.Rotate(-0.01f);
     else if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
       material.Rotate(0.01f);
-    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
       drill.MoveForward();
-    else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+    else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
       drill.MoveBackward();
+    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+      drill.MoveUp();
+    else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+      drill.MoveDown();
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 

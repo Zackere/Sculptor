@@ -170,18 +170,21 @@ void SculptingMaterial::Collide(Drill const& drill) {
       [this]() { kd_tree_->Construct(invisible_instances_positions_); });
   kd_tree_->Construct(visible_instances_positions_);
   auto const& drill_vertices = drill.GetReferenceModelVertices();
-  std::set<int, std::greater<int>> to_be_removed, to_be_added = {};
-  for (auto const& x : drill_vertices) {
-    auto p = kd_tree_->FindNearest(visible_instances_positions_, x);
-    if (kd_tree_->GetDistanceToLastFound() < side_len_)
-      to_be_removed.insert(p);
-  }
+  auto to_be_removed =
+      kd_tree_->FindNearest(visible_instances_positions_, drill_vertices);
+  std::set<int, std::greater<int>> to_be_added = {};
+  for (auto it = to_be_removed.begin(); it != to_be_removed.end();)
+    if (it->second > side_len_)
+      it = to_be_removed.erase(it);
+    else
+      ++it;
+
   auto m_back = glm::rotate(glm::mat4(1.f), -angle_, glm::vec3{0, 1, 0});
   auto m_for = glm::rotate(glm::mat4(1.f), angle_, glm::vec3{0, 1, 0});
   if (t.joinable())
     t.join();
-  for (auto i : to_be_removed) {
-    auto p = m_back * glm::vec4(visible_instances_positions_[i], 1.f);
+  for (auto const& v : to_be_removed) {
+    auto p = m_back * glm::vec4(visible_instances_positions_[v.first], 1.f);
 
     to_be_added.insert(kd_tree_->Find(invisible_instances_positions_,
                                       glm::vec3{p.x + side_len_, p.y, p.z}));
@@ -196,7 +199,7 @@ void SculptingMaterial::Collide(Drill const& drill) {
     to_be_added.insert(kd_tree_->Find(invisible_instances_positions_,
                                       glm::vec3{p.x, p.y, p.z - side_len_}));
 
-    visible_instances_positions_[i] = visible_instances_positions_.back();
+    visible_instances_positions_[v.first] = visible_instances_positions_.back();
     visible_instances_positions_.pop_back();
   }
   to_be_added.erase(-1);
@@ -215,6 +218,8 @@ void SculptingMaterial::Collide(Drill const& drill) {
 }
 
 void SculptingMaterial::Render(glm::mat4 const& vp) const {
+  if (visible_instances_positions_.empty())
+    return;
   glUseProgram(GetShader());
   Enable();
   glUniformMatrix4fv(glGetUniformLocation(GetShader(), "mvp"), 1, GL_FALSE,

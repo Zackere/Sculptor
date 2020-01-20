@@ -36,7 +36,7 @@ void __global__ ApplyKernel(float* vectors, int size) {
 }
 }  // namespace
 
-void Apply(std::vector<glm::vec3>& vectors, glm::mat4 matrix) {
+void Apply(std::vector<glm::vec3>& vectors, glm::mat4 const& matrix) {
   thrust::device_vector<glm::vec3> d_vectors;
   auto extra_space = vectors.size() % (kThreads * kBlocks);
   if (extra_space != 0)
