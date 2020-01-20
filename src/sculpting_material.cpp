@@ -100,6 +100,11 @@ SculptingMaterial::SculptingMaterial(MaterialType material_type,
   glGenBuffers(1, &visible_instances_positions_buffer_);
   glVertexAttribDivisor(glGetAttribLocation(GetShader(), "offset"), 1);
 
+  auto materialOffsetsID = glGetAttribLocation(GetShader(), "offset");
+  glEnableVertexAttribArray(materialOffsetsID);
+  glBindBuffer(GL_ARRAY_BUFFER, visible_instances_positions_buffer_);
+  glVertexAttribPointer(materialOffsetsID, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
   const auto scale = 1.f / size;
   Transform(glm::scale(glm::mat4(1.f), glm::vec3(scale, scale, scale)));
 
@@ -209,17 +214,9 @@ void SculptingMaterial::Collide(Drill const& drill) {
   }
 }
 
-void SculptingMaterial::Enable() const {
-  glObject::Enable();
-  auto materialOffsetsID = glGetAttribLocation(GetShader(), "offset");
-  glEnableVertexAttribArray(materialOffsetsID);
-  glBindBuffer(GL_ARRAY_BUFFER, visible_instances_positions_buffer_);
-  glVertexAttribPointer(materialOffsetsID, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-}
-
 void SculptingMaterial::Render(glm::mat4 const& vp) const {
-  Enable();
   glUseProgram(GetShader());
+  Enable();
   glUniformMatrix4fv(glGetUniformLocation(GetShader(), "mvp"), 1, GL_FALSE,
                      &vp[0][0]);
   glBindTexture(GL_TEXTURE_2D, texture_);
@@ -234,6 +231,5 @@ void SculptingMaterial::Transform(glm::mat4 const& m) {
   glBufferData(GL_ARRAY_BUFFER,
                visible_instances_positions_.size() * 3 * sizeof(float),
                visible_instances_positions_.data(), GL_STATIC_DRAW);
-  // MatrixApplier::Apply(invisible_instances_positions_, m);
 }
 }  // namespace Sculptor

@@ -33,10 +33,6 @@ int Sculptor::Main() {
   glEnable(GL_CULL_FACE);
   glCullFace(GL_BACK);
 
-  GLuint VertexArrayID;
-  glGenVertexArrays(1, &VertexArrayID);
-  glBindVertexArray(VertexArrayID);
-
   constexpr float side_len = 60;
   SculptingMaterial material(SculptingMaterial::MaterialType::CUBE,
                              SculptingMaterial::InitialShape::CUBE, side_len,
@@ -69,8 +65,6 @@ int Sculptor::Main() {
 
     material.Render(vp);
     drill.Render(vp);
-
-    glDisableVertexAttribArray(0);
 
     glfwSwapBuffers(window);
     glfwPollEvents();

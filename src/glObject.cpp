@@ -10,12 +10,15 @@ namespace Sculptor {
 glObject::glObject(std::string_view model_path,
                    std::string_view vertex_shader_path,
                    std::string_view fragment_shader_path) {
-  glGenBuffers(1, &reference_model_gl_.verticies);
-  glGenBuffers(1, &reference_model_gl_.uvs);
-  glGenBuffers(1, &reference_model_gl_.normals);
+  glGenVertexArrays(1, &vao_);
+  glBindVertexArray(vao_);
 
   OBJLoader::LoadOBJ(model_path.data(), reference_model_.verticies,
                      reference_model_.uvs, reference_model_.normals);
+
+  glGenBuffers(1, &reference_model_gl_.verticies);
+  glGenBuffers(1, &reference_model_gl_.uvs);
+  glGenBuffers(1, &reference_model_gl_.normals);
 
   glBindBuffer(GL_ARRAY_BUFFER, reference_model_gl_.verticies);
   glBufferData(GL_ARRAY_BUFFER,
@@ -29,11 +32,6 @@ glObject::glObject(std::string_view model_path,
                reference_model_.normals.size() * 3 * sizeof(float),
                reference_model_.normals.data(), GL_STATIC_DRAW);
 
-  shader_ = ShaderLoader::Load(vertex_shader_path.data(),
-                               fragment_shader_path.data());
-}
-
-void glObject::Enable() const {
   glEnableVertexAttribArray(0);
   glBindBuffer(GL_ARRAY_BUFFER, reference_model_gl_.verticies);
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
@@ -45,11 +43,18 @@ void glObject::Enable() const {
   glEnableVertexAttribArray(2);
   glBindBuffer(GL_ARRAY_BUFFER, reference_model_gl_.normals);
   glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+  shader_ = ShaderLoader::Load(vertex_shader_path.data(),
+                               fragment_shader_path.data());
+}
+
+void glObject::Enable() const {
+  glBindVertexArray(vao_);
 }
 
 void glObject::Render(glm::mat4 const& vp) const {
-  Enable();
   glUseProgram(shader_);
+  Enable();
   glUniformMatrix4fv(glGetUniformLocation(shader_, "mvp"), 1, GL_FALSE,
                      &vp[0][0]);
   glDrawArrays(GL_TRIANGLES, 0, reference_model_.verticies.size());

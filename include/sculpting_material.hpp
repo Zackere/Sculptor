@@ -29,7 +29,6 @@ class SculptingMaterial : public glObject {
   void Rotate(float amount);
   void Collide(Drill const& drill);
 
-  void Enable() const override;
   void Render(glm::mat4 const& vp) const override;
   void Transform(glm::mat4 const& m) override;
 

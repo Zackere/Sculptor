@@ -21,7 +21,7 @@ class glObject {
   }
 
  protected:
-  virtual void Enable() const;
+  void Enable() const;
   virtual void Transform(glm::mat4 const& m);
   auto GetShader() const { return shader_; }
   auto GetNumberOfReferenceModelVerticies() const {
@@ -38,5 +38,6 @@ class glObject {
     GLuint verticies = 0, uvs = 0, normals = 0;
   } reference_model_gl_ = {};
   GLuint shader_ = 0;
+  GLuint vao_ = 0;
 };
 }  // namespace Sculptor
