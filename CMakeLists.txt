@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.12)
 project(Sculptor LANGUAGES CXX CUDA)
 set(CMAKE_CXX_CLANG_TIDY clang-tidy -checks=-*,cert-*,cppcoreguidelines-*,clang-analyzer-*,performance-*,modernize-*,bugprone-*)
+set(CMAKE_CXX_CPPLINT "cpplint")
 
 set(CMAKE_COMPILER_IS_GNUCC TRUE)
 file(GLOB source_files  ${CMAKE_SOURCE_DIR}/src/*.cu ${CMAKE_SOURCE_DIR}/src/*.cpp ${CMAKE_SOURCE_DIR}/include/*.hpp)
@@ -29,17 +30,15 @@ target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES} ${GLEW_LIBRARIES} glfw
 set_property(TARGET ${PROJECT_NAME} PROPERTY CUDA_STANDARD 14)
 set(CUDA_NVCC_FLAGS "--maxrregcount 32 -lineinfo")
 set(CMAKE_CXX_FLAGS
-    "-std=c++17                \
+    "-std=c++17 -O2 -g         \
     -Weffc++                   \
     -Wredundant-decls          \
     -Wall                      \
     -Wextra                    \
     -Wshadow                   \
-    -O2                        \
     -Wswitch-enum              \
     -Werror                    \
     -Wredundant-decls          \
     -Wformat=2                 \
     -Wmissing-format-attribute \
-    -Wformat-nonliteral        \
-    -g")
+    -Wformat-nonliteral")

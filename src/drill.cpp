@@ -1,10 +1,10 @@
 #include "../include/drill.hpp"
 
+#include <execution>
 #include <iostream>
 #include <numeric>
 
 #include "glm/gtc/matrix_transform.hpp"
-
 namespace Sculptor {
 namespace {
 constexpr float kScale = 0.03;
@@ -24,10 +24,9 @@ Drill::Drill()
   glm::vec4 forward4(forward_, 1.0f);
   forward4 = glm::normalize(forward4) * model_matrix;
   forward_ = forward4;
-  pos_ =
-      std::accumulate(GetReferenceModelVertices().begin(),
-                      GetReferenceModelVertices().end(), glm::vec3(0, 0, 0)) /
-      static_cast<float>(GetReferenceModelVertices().size());
+  pos_ = std::reduce(std::execution::par, GetReferenceModelVertices().begin(),
+                     GetReferenceModelVertices().end()) /
+         static_cast<float>(GetReferenceModelVertices().size());
 }
 
 void Drill::MoveForward() {
