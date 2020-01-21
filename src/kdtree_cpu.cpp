@@ -91,15 +91,14 @@ void KdTreeCPU::FindNearestInKd(int begin, int end, int level) {
       float diff = query_point_.x - (*kd_tree_)[mid].x;
       if (diff > -kEps) {
         FindNearestInKd(mid + 1, end, 1);
-        if (query_point_.x - (*kd_tree_)[mid].x < cur_best_distance_) {
+        if (diff < cur_best_distance_) {
           FindNearestInKd(begin, mid, 1);
           break;
         }
       }
       if (diff < kEps) {
         FindNearestInKd(begin, mid, 1);
-        if (diff <= -kEps &&
-            (*kd_tree_)[mid].x - query_point_.x < cur_best_distance_) {
+        if (diff <= -kEps && -diff < cur_best_distance_) {
           FindNearestInKd(mid + 1, end, 1);
           break;
         }
@@ -109,33 +108,31 @@ void KdTreeCPU::FindNearestInKd(int begin, int end, int level) {
       float diff = query_point_.y - (*kd_tree_)[mid].y;
       if (diff > -kEps) {
         FindNearestInKd(mid + 1, end, 2);
-        if (query_point_.y - (*kd_tree_)[mid].y < cur_best_distance_) {
+        if (diff < cur_best_distance_) {
           FindNearestInKd(begin, mid, 2);
           break;
         }
       }
       if (diff < kEps) {
         FindNearestInKd(begin, mid, 2);
-        if (diff <= -kEps &&
-            (*kd_tree_)[mid].y - query_point_.y < cur_best_distance_) {
+        if (diff <= -kEps && -diff < cur_best_distance_) {
           FindNearestInKd(mid + 1, end, 2);
           break;
         }
       }
     } break;
     case 2: {
-      float diff = query_point_.z > (*kd_tree_)[mid].z;
+      float diff = query_point_.z - (*kd_tree_)[mid].z;
       if (diff > -kEps) {
         FindNearestInKd(mid + 1, end, 0);
-        if (query_point_.z - (*kd_tree_)[mid].z < cur_best_distance_) {
+        if (diff < cur_best_distance_) {
           FindNearestInKd(begin, mid, 0);
           break;
         }
       }
       if (diff < kEps) {
         FindNearestInKd(begin, mid, 0);
-        if (diff <= -kEps &&
-            (*kd_tree_)[mid].z - query_point_.z < cur_best_distance_) {
+        if (diff <= -kEps && -diff < cur_best_distance_) {
           FindNearestInKd(mid + 1, end, 0);
           break;
         }
@@ -171,9 +168,9 @@ int KdTreeCPU::FindInKd(int begin, int end, int level) const {
       break;
   }
   int ret = -1;
-  if (diff > -kEps)
+  if (diff < kEps)
     ret = FindInKd(begin, mid, level);
-  if (diff < kEps && ret == -1)
+  if (diff > -kEps && ret == -1)
     ret = FindInKd(begin, mid, level);
   return ret;
 }
