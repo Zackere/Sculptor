@@ -172,7 +172,7 @@ void SculptingMaterial::Collide(Drill const& drill) {
   auto const& drill_vertices = drill.GetReferenceModelVertices();
   auto to_be_removed =
       kd_tree_->FindNearest(visible_instances_positions_, drill_vertices);
-  std::set<int, std::greater<int>> to_be_added = {};
+  std::set<int, std::greater<>> to_be_added = {};
   for (auto it = to_be_removed.begin(); it != to_be_removed.end();)
     if (it->second > side_len_)
       it = to_be_removed.erase(it);

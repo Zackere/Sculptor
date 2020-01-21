@@ -41,10 +41,10 @@ void KdTreeCPU::Construct(std::vector<glm::vec3>& v) {
   ContructKd(v.begin(), v.end(), 0);
 }
 
-std::map<int, float, std::greater<int>> KdTreeCPU::FindNearest(
+std::map<int, float, std::greater<>> KdTreeCPU::FindNearest(
     std::vector<glm::vec3> const& kd_tree,
     std::vector<glm::vec3> const& query_points) {
-  std::map<int, float, std::greater<int>> ret;
+  std::map<int, float, std::greater<>> ret;
   kd_tree_ = &kd_tree;
   for (auto const& p : query_points) {
     query_point_ = p;

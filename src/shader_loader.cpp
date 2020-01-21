@@ -45,7 +45,7 @@ GLuint Load(std::string_view vertex_file_path,
   // Compile Vertex Shader
   std::cout << "Compiling shader : " << vertex_file_path << "\n";
   char const* VertexSourcePointer = VertexShaderCode.c_str();
-  glShaderSource(VertexShaderID, 1, &VertexSourcePointer, NULL);
+  glShaderSource(VertexShaderID, 1, &VertexSourcePointer, nullptr);
   glCompileShader(VertexShaderID);
 
   // Check Vertex Shader
@@ -53,7 +53,7 @@ GLuint Load(std::string_view vertex_file_path,
   glGetShaderiv(VertexShaderID, GL_INFO_LOG_LENGTH, &InfoLogLength);
   if (InfoLogLength > 0) {
     std::vector<char> VertexShaderErrorMessage(InfoLogLength + 1);
-    glGetShaderInfoLog(VertexShaderID, InfoLogLength, NULL,
+    glGetShaderInfoLog(VertexShaderID, InfoLogLength, nullptr,
                        &VertexShaderErrorMessage[0]);
     printf("%s\n", &VertexShaderErrorMessage[0]);
   }
@@ -61,7 +61,7 @@ GLuint Load(std::string_view vertex_file_path,
   // Compile Fragment Shader
   std::cout << "Compiling shader : " << fragment_file_path << "\n";
   char const* FragmentSourcePointer = FragmentShaderCode.c_str();
-  glShaderSource(FragmentShaderID, 1, &FragmentSourcePointer, NULL);
+  glShaderSource(FragmentShaderID, 1, &FragmentSourcePointer, nullptr);
   glCompileShader(FragmentShaderID);
 
   // Check Fragment Shader
@@ -69,7 +69,7 @@ GLuint Load(std::string_view vertex_file_path,
   glGetShaderiv(FragmentShaderID, GL_INFO_LOG_LENGTH, &InfoLogLength);
   if (InfoLogLength > 0) {
     std::vector<char> FragmentShaderErrorMessage(InfoLogLength + 1);
-    glGetShaderInfoLog(FragmentShaderID, InfoLogLength, NULL,
+    glGetShaderInfoLog(FragmentShaderID, InfoLogLength, nullptr,
                        &FragmentShaderErrorMessage[0]);
     printf("%s\n", &FragmentShaderErrorMessage[0]);
   }
@@ -86,7 +86,7 @@ GLuint Load(std::string_view vertex_file_path,
   glGetProgramiv(ProgramID, GL_INFO_LOG_LENGTH, &InfoLogLength);
   if (InfoLogLength > 0) {
     std::vector<char> ProgramErrorMessage(InfoLogLength + 1);
-    glGetProgramInfoLog(ProgramID, InfoLogLength, NULL,
+    glGetProgramInfoLog(ProgramID, InfoLogLength, nullptr,
                         &ProgramErrorMessage[0]);
     printf("%s\n", &ProgramErrorMessage[0]);
   }

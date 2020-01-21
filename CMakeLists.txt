@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.12)
 project(Sculptor LANGUAGES CXX CUDA)
+set(CMAKE_CXX_CLANG_TIDY clang-tidy -checks=-*,cert-*,cppcoreguidelines-*,clang-analyzer-*,performance-*,modernize-*,bugprone-*)
 
 set(CMAKE_COMPILER_IS_GNUCC TRUE)
 file(GLOB source_files  ${CMAKE_SOURCE_DIR}/src/*.cu ${CMAKE_SOURCE_DIR}/src/*.cpp ${CMAKE_SOURCE_DIR}/include/*.hpp)
