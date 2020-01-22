@@ -1,5 +1,6 @@
 #pragma once
 
+#include <future>
 #include <memory>
 #include <vector>
 
@@ -40,5 +41,6 @@ class SculptingMaterial : public glObject {
   std::unique_ptr<KdTree> kd_tree_ = nullptr;
   float side_len_ = 0;
   float angle_ = 0;
+  std::future<void> generator_futr_ = {};
 };
 }  // namespace Sculptor

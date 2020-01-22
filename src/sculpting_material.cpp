@@ -4,6 +4,7 @@
 #include <execution>
 #include <functional>
 #include <iostream>
+#include <optional>
 #include <set>
 #include <string_view>
 #include <thread>
@@ -139,12 +140,18 @@ void SculptingMaterial::Reset(InitialShape new_shape, int size) {
         InsertHollowCube(size, visible_instances_positions_, side_len_);
         return;
       }
+      if (generator_futr_.valid())
+        generator_futr_.wait();
+      generator_futr_ = std::async(std::launch::async, [this, size]() {
+        invisible_instances_positions_.reserve((size - 2) * (size - 2) *
+                                               (size - 2));
+        for (int i = size - 2; i > 0; i -= 2)
+          InsertHollowCube(i, invisible_instances_positions_, side_len_);
+        kd_tree_->Construct(invisible_instances_positions_);
+      });
+
       visible_instances_positions_.reserve(size * size * size);
       InsertHollowCube(size, visible_instances_positions_, side_len_);
-      invisible_instances_positions_.reserve((size - 2) * (size - 2) *
-                                             (size - 2));
-      for (int i = size - 2; i > 0; i -= 2)
-        InsertHollowCube(i, invisible_instances_positions_, side_len_);
       break;
   }
   glBindBuffer(GL_ARRAY_BUFFER, visible_instances_positions_buffer_);
@@ -166,8 +173,12 @@ void SculptingMaterial::Rotate(float amount) {
 void SculptingMaterial::Collide(Drill const& drill) {
   if (visible_instances_positions_.empty())
     return;
-  std::thread t(
-      [this]() { kd_tree_->Construct(invisible_instances_positions_); });
+
+  std::optional<std::thread> t = std::nullopt;
+  if (!generator_futr_.valid())
+    t.emplace(
+        [this]() { kd_tree_->Construct(invisible_instances_positions_); });
+
   kd_tree_->Construct(visible_instances_positions_);
   auto const& drill_vertices = drill.GetReferenceModelVertices();
   auto to_be_removed =
@@ -179,10 +190,19 @@ void SculptingMaterial::Collide(Drill const& drill) {
     else
       ++it;
 
+  if (t.has_value())
+    t.value().join();
+
+  if (to_be_removed.empty())
+    return;
+
   auto m_back = glm::rotate(glm::mat4(1.f), -angle_, glm::vec3{0, 1, 0});
   auto m_for = glm::rotate(glm::mat4(1.f), angle_, glm::vec3{0, 1, 0});
-  if (t.joinable())
-    t.join();
+
+  if (generator_futr_.valid() && generator_futr_.wait_for(std::chrono::seconds(
+                                     0)) == std::future_status::ready)
+    generator_futr_.get();
+
   for (auto const& v : to_be_removed) {
     auto p = m_back * glm::vec4(visible_instances_positions_[v.first], 1.f);
 
