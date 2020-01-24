@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(Sculptor LANGUAGES CXX CUDA)
+project(Sculptor LANGUAGES CXX)
 set(CMAKE_CXX_CLANG_TIDY clang-tidy -checks=-*,cert-*,cppcoreguidelines-*,clang-analyzer-*,performance-*,modernize-*,bugprone-*)
 set(CMAKE_CXX_CPPLINT "cpplint")
 
@@ -11,13 +11,15 @@ add_executable(${PROJECT_NAME} main.cpp ${source_files})
 target_link_libraries(${PROJECT_NAME} tbb)
 
 # Cuda
-find_package(CUDA REQUIRED)
-set(CUDA_PROPAGATE_HOST_FLAGS OFF)
+set(CMAKE_CUDA_HOST_COMPILER g++-8)
 set_target_properties(${PROJECT_NAME} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 set(CMAKE_CUDA_STANDARD 14)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 set(CUDA_LINK_LIBRARIES_KEYWORD PUBLIC)
 include_directories($ENV{CUDA_PATH}/include)
+set(CUDA_PROPAGATE_HOST_FLAGS OFF)
+find_package(CUDA REQUIRED)
+enable_language(CUDA)
 
 # OpenGL
 find_package(OpenGL REQUIRED)
