@@ -5,14 +5,17 @@
 #include "../matrixApplier/matrix_applier_base.hpp"
 #include "../objLoader/obj_loader_base.hpp"
 #include "../shaderLoader/shader_loader_base.hpp"
+#include "../textureLoader/texture_loader_base.hpp"
 
 namespace Sculptor {
 glObject::glObject(std::string_view model_path,
                    std::string_view vertex_shader_path,
                    std::string_view fragment_shader_path,
+                   std::string_view texture_path,
                    std::unique_ptr<ObjLoaderBase> obj_loader,
                    std::unique_ptr<ShaderLoaderBase> shader_loader,
-                   std::unique_ptr<MatrixApplierBase> matrix_applier)
+                   std::unique_ptr<MatrixApplierBase> matrix_applier,
+                   std::unique_ptr<TextureLoaderBase> texture_loader)
     : matrix_applier_(std::move(matrix_applier)) {
   glGenVertexArrays(1, &vao_);
   glBindVertexArray(vao_);
@@ -51,6 +54,7 @@ glObject::glObject(std::string_view model_path,
 
   shader_ = shader_loader->Load(vertex_shader_path.data(),
                                 fragment_shader_path.data());
+  texture_ = texture_loader->Load(texture_path);
 }
 
 void glObject::Enable() const {

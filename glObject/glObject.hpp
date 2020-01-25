@@ -11,15 +11,18 @@ namespace Sculptor {
 class ObjLoaderBase;
 class ShaderLoaderBase;
 class MatrixApplierBase;
+class TextureLoaderBase;
 
 class glObject {
  public:
   glObject(std::string_view model_path,
            std::string_view vertex_shader_path,
            std::string_view fragment_shader_path,
+           std::string_view texture_path,
            std::unique_ptr<ObjLoaderBase> obj_loader,
            std::unique_ptr<ShaderLoaderBase> shader_loader,
-           std::unique_ptr<MatrixApplierBase> matrix_applier);
+           std::unique_ptr<MatrixApplierBase> matrix_applier,
+           std::unique_ptr<TextureLoaderBase> texture_loader_);
 
   void Render(glm::mat4 const& vp) const;
 
@@ -42,6 +45,7 @@ class glObject {
   } model_parameters_gl_ = {};
   GLuint shader_ = 0;
   GLuint vao_ = 0;
+  GLuint texture_ = 0;
   std::unique_ptr<MatrixApplierBase> matrix_applier_ = nullptr;
 };
 }  // namespace Sculptor
