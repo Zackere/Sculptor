@@ -1,8 +1,8 @@
 #pragma once
 
+#include <glm/glm.hpp>
 #include <vector>
 
-#include "glm/glm.hpp"
 #include "shape_generator_base.hpp"
 
 namespace Sculptor {

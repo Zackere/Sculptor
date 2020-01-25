@@ -1,10 +1,10 @@
 #pragma once
 
+#include <glm/glm.hpp>
 #include <string>
 #include <string_view>
 #include <vector>
 
-#include "glm/glm.hpp"
 #include "model_provider_base.hpp"
 
 namespace Sculptor {

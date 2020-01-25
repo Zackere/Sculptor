@@ -1,9 +1,9 @@
 #pragma once
 
+#include <glm/glm.hpp>
 #include <memory>
 #include <vector>
 
-#include "glm/glm.hpp"
 #include "hollow_cube_generator.hpp"
 #include "shape_generator_base.hpp"
 

@@ -1,12 +1,14 @@
 #pragma once
 
+#include <GL/glew.h>
+
+#include <glm/glm.hpp>
 #include <memory>
 #include <string_view>
 #include <vector>
 
+#include "../cudaGraphics/cudaGraphicsResource/cuda_graphics_resource.hpp"
 #include "../glObject/gl_object.hpp"
-#include "GL/glew.h"
-#include "glm/glm.hpp"
 
 namespace Sculptor {
 class ModelProviderBase;
@@ -29,7 +31,7 @@ class glInstancedObject {
   std::unique_ptr<glObject> reference_model_;
   std::unique_ptr<ShapeGeneratorBase> shape_generator_ = nullptr;
   std::vector<glm::vec3> positions_ = {};
-  GLuint positions_gl_buffer_ = 0;
+  CudaGraphicsResource positions_buffer_;
   std::unique_ptr<MatrixApplierBase> matrix_applier_ = nullptr;
 };
 }  // namespace Sculptor

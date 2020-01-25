@@ -1,5 +1,10 @@
 #include "sculptor.hpp"
 
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <memory>
 #include <string>
 #include <utility>
@@ -11,10 +16,6 @@
 #include "../shaderProvider/shader_provider.hpp"
 #include "../shapeGenerator/hollow_cube_generator.hpp"
 #include "../textureProvider/png_texture_provider.hpp"
-#include "GL/glew.h"
-#include "GLFW/glfw3.h"
-#include "glm/glm.hpp"
-#include "glm/gtc/matrix_transform.hpp"
 
 namespace Sculptor {
 Sculptor::Sculptor() {
@@ -50,7 +51,7 @@ int Sculptor::Main() {
   glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
   glClearColor(44.0f / 255.0f, 219.0f / 255.0f, 216.0f / 255.0f, 0.0f);
   std::string base = "../Sculptor2/Sculptor/";
-  constexpr int ncubes = 40;
+  constexpr int ncubes = 2;
   std::unique_ptr<glObject> cube = std::make_unique<glObject>(
       std::make_unique<ObjProvider>(base + "model/cube.obj"),
       std::make_unique<ShaderProvider>(
@@ -60,6 +61,7 @@ int Sculptor::Main() {
       std::make_unique<PNGTextureProvider>(base + "texture/cube.png"));
   cube->Transform(glm::scale(
       glm::mat4(1.f), glm::vec3(1.f / ncubes, 1.f / ncubes, 1.f / ncubes)));
+
   glInstancedObject gi(ncubes, std::move(cube),
                        std::make_unique<HollowCubeGenerator>(2.f / ncubes),
                        std::make_unique<MatrixApplier>());
@@ -70,6 +72,8 @@ int Sculptor::Main() {
     gi.Render(vp);
 
     glfwSwapBuffers(window);
+
+    gi.Transform(glm::rotate(glm::mat4(1.f), 0.01f, glm::vec3(0, 1, 0)));
 
     glfwPollEvents();
   } while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS &&

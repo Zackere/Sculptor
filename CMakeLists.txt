@@ -5,11 +5,12 @@ set(CMAKE_CXX_CPPLINT "cpplint")
 
 set(CMAKE_COMPILER_IS_GNUCC TRUE)
 file(GLOB source_files
-    ${CMAKE_SOURCE_DIR}/*/*.cu
     ${CMAKE_SOURCE_DIR}/*/*.cpp
     ${CMAKE_SOURCE_DIR}/*/*.hpp
+    ${CMAKE_SOURCE_DIR}/*/*.cu
     ${CMAKE_SOURCE_DIR}/*/*/*.hpp
     ${CMAKE_SOURCE_DIR}/*/*/*.cpp
+    ${CMAKE_SOURCE_DIR}/*/*/*.cu
     )
 add_executable(${PROJECT_NAME} main.cpp ${source_files})
 add_definitions(-D__INTELLISENSE__)
@@ -39,7 +40,7 @@ target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES} ${GLEW_LIBRARIES} glfw
 set_property(TARGET ${PROJECT_NAME} PROPERTY CUDA_STANDARD 14)
 set(CUDA_NVCC_FLAGS "--maxrregcount 32 -lineinfo")
 set(CMAKE_CXX_FLAGS
-    "-std=c++17 -O2 -g         \
+    "-std=c++17 -O0 -g         \
     -Weffc++                   \
     -Wredundant-decls          \
     -Wall                      \

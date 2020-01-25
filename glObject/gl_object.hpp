@@ -1,11 +1,11 @@
 #pragma once
 
+#include <GL/glew.h>
+
+#include <glm/glm.hpp>
 #include <memory>
 #include <string_view>
 #include <vector>
-
-#include "GL/glew.h"
-#include "glm/glm.hpp"
 
 namespace Sculptor {
 class ModelProviderBase;

@@ -1,8 +1,8 @@
 #pragma once
 
-#include <string_view>
+#include <GL/glew.h>
 
-#include "GL/glew.h"
+#include <string_view>
 
 namespace Sculptor {
 class ShaderProviderBase {

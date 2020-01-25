@@ -2,7 +2,6 @@
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
 #include <device_launch_parameters.h>
-#include <thrust/device_vector.h>
 
 #include "matrix_applier.hpp"
 
@@ -38,18 +37,21 @@ void __global__ ApplyKernel(float* vectors, int size) {
 }
 }  // namespace
 void MatrixApplier::Apply(std::vector<glm::vec3>& vectors,
-                          const glm::mat4& matrix) {
-  thrust::device_vector<glm::vec3> d_vectors;
+                          glm::mat4 const& matrix) {
   auto extra_space = vectors.size() % (kThreads * kBlocks);
   if (extra_space != 0)
     extra_space = kThreads * kBlocks - extra_space;
-  d_vectors.resize(vectors.size() + extra_space);
-  thrust::copy(vectors.begin(), vectors.end(), d_vectors.begin());
+
+  float* dvectors = nullptr;
+  cudaMalloc(&dvectors, sizeof(float) * 3 * (vectors.size() + extra_space));
+  cudaMemcpy(dvectors, vectors.data(), sizeof(float) * 3 * vectors.size(),
+             cudaMemcpyHostToDevice);
   cudaMemcpyToSymbol(c_matrix, &matrix, sizeof(c_matrix), 0);
-  ApplyKernel<<<kBlocks, kThreads>>>(
-      reinterpret_cast<float*>(d_vectors.data().get()), 3 * d_vectors.size());
+  ApplyKernel<<<kBlocks, kThreads>>>(dvectors,
+                                     3 * (vectors.size() + extra_space));
+  cudaMemcpy(vectors.data(), dvectors, sizeof(float) * 3 * vectors.size(),
+             cudaMemcpyDeviceToHost);
   cudaDeviceSynchronize();
-  d_vectors.resize(vectors.size());
-  thrust::copy(d_vectors.begin(), d_vectors.end(), vectors.begin());
+  cudaFree(dvectors);
 }
 }  // namespace Sculptor

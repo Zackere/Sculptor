@@ -1,9 +1,10 @@
 #pragma once
 
+#include <GL/glew.h>
+
 #include <string>
 #include <string_view>
 
-#include "GL/glew.h"
 #include "shader_provider_base.hpp"
 
 namespace Sculptor {

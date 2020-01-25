@@ -16,24 +16,24 @@ glInstancedObject::glInstancedObject(
     std::unique_ptr<MatrixApplierBase> matrix_applier)
     : reference_model_(std::move(reference_model)),
       shape_generator_(std::move(shape_generator)),
+      positions_buffer_(),
       matrix_applier_(std::move(matrix_applier)) {
-  glGenBuffers(1, &positions_gl_buffer_);
   glVertexAttribDivisor(
       glGetAttribLocation(reference_model_->GetShader(), "offset"), 1);
 
   positions_ = shape_generator_->Generate(nobjects);
-  glBindBuffer(GL_ARRAY_BUFFER, positions_gl_buffer_);
+  glBindBuffer(GL_ARRAY_BUFFER, positions_buffer_.GetGLBuffer());
   glBufferData(GL_ARRAY_BUFFER, positions_.size() * 3 * sizeof(float),
                positions_.data(), GL_STATIC_DRAW);
 
   auto materialOffsetsID =
       glGetAttribLocation(reference_model_->GetShader(), "offset");
   glEnableVertexAttribArray(materialOffsetsID);
-  glBindBuffer(GL_ARRAY_BUFFER, positions_gl_buffer_);
+  glBindBuffer(GL_ARRAY_BUFFER, positions_buffer_.GetGLBuffer());
   glVertexAttribPointer(materialOffsetsID, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 }
 
-void glInstancedObject::Render(const glm::mat4& vp) const {
+void glInstancedObject::Render(glm::mat4 const& vp) const {
   reference_model_->Enable();
   glUniformMatrix4fv(glGetUniformLocation(reference_model_->GetShader(), "mvp"),
                      1, GL_FALSE, &vp[0][0]);
@@ -41,6 +41,14 @@ void glInstancedObject::Render(const glm::mat4& vp) const {
   glDrawArraysInstanced(GL_TRIANGLES, 0,
                         reference_model_->GetNumberOfModelVertices(),
                         positions_.size());
+}
+
+void glInstancedObject::Transform(glm::mat4 const& m) {
+  reference_model_->Transform(m);
+  matrix_applier_->Apply(positions_, m);
+  glBindBuffer(GL_ARRAY_BUFFER, positions_buffer_.GetGLBuffer());
+  glBufferData(GL_ARRAY_BUFFER, positions_.size() * 3 * sizeof(float),
+               positions_.data(), GL_STATIC_DRAW);
 }
 
 }  // namespace Sculptor
