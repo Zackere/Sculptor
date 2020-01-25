@@ -46,12 +46,12 @@ int Sculptor::Main() {
       glm::radians(45.0f), static_cast<float>(wWidth) / wHeight, 0.1f, 100.0f);
   glm::mat4 view =
       glm::lookAt(glm::vec3(4, 2, 4), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
-  [[maybe_unused]] auto vp = projection * view;
+  auto vp = projection * view;
 
   glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
   glClearColor(44.0f / 255.0f, 219.0f / 255.0f, 216.0f / 255.0f, 0.0f);
   std::string base = "../Sculptor2/Sculptor/";
-  constexpr int ncubes = 2;
+  constexpr int ncubes = 200;
   std::unique_ptr<glObject> cube = std::make_unique<glObject>(
       std::make_unique<ObjProvider>(base + "model/cube.obj"),
       std::make_unique<ShaderProvider>(

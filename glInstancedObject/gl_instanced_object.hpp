@@ -30,8 +30,7 @@ class glInstancedObject {
  private:
   std::unique_ptr<glObject> reference_model_;
   std::unique_ptr<ShapeGeneratorBase> shape_generator_ = nullptr;
-  std::vector<glm::vec3> positions_ = {};
-  CudaGraphicsResource positions_buffer_;
+  std::unique_ptr<CudaGraphicsResource> positions_buffer_ = nullptr;
   std::unique_ptr<MatrixApplierBase> matrix_applier_ = nullptr;
 };
 }  // namespace Sculptor

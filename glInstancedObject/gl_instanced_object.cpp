@@ -16,20 +16,18 @@ glInstancedObject::glInstancedObject(
     std::unique_ptr<MatrixApplierBase> matrix_applier)
     : reference_model_(std::move(reference_model)),
       shape_generator_(std::move(shape_generator)),
-      positions_buffer_(),
       matrix_applier_(std::move(matrix_applier)) {
   glVertexAttribDivisor(
       glGetAttribLocation(reference_model_->GetShader(), "offset"), 1);
 
-  positions_ = shape_generator_->Generate(nobjects);
-  glBindBuffer(GL_ARRAY_BUFFER, positions_buffer_.GetGLBuffer());
-  glBufferData(GL_ARRAY_BUFFER, positions_.size() * 3 * sizeof(float),
-               positions_.data(), GL_STATIC_DRAW);
+  auto positions = shape_generator_->Generate(nobjects);
+  positions_buffer_ = std::make_unique<CudaGraphicsResource>(
+      positions.data(), positions.size() * 3 * sizeof(float));
 
   auto materialOffsetsID =
       glGetAttribLocation(reference_model_->GetShader(), "offset");
   glEnableVertexAttribArray(materialOffsetsID);
-  glBindBuffer(GL_ARRAY_BUFFER, positions_buffer_.GetGLBuffer());
+  glBindBuffer(GL_ARRAY_BUFFER, positions_buffer_->GetGLBuffer());
   glVertexAttribPointer(materialOffsetsID, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 }
 
@@ -40,15 +38,12 @@ void glInstancedObject::Render(glm::mat4 const& vp) const {
   glBindTexture(GL_TEXTURE_2D, reference_model_->GetTexture());
   glDrawArraysInstanced(GL_TRIANGLES, 0,
                         reference_model_->GetNumberOfModelVertices(),
-                        positions_.size());
+                        positions_buffer_->GetSize() / sizeof(glm::vec3));
 }
 
 void glInstancedObject::Transform(glm::mat4 const& m) {
   reference_model_->Transform(m);
-  matrix_applier_->Apply(positions_, m);
-  glBindBuffer(GL_ARRAY_BUFFER, positions_buffer_.GetGLBuffer());
-  glBufferData(GL_ARRAY_BUFFER, positions_.size() * 3 * sizeof(float),
-               positions_.data(), GL_STATIC_DRAW);
+  matrix_applier_->Apply(positions_buffer_->GetCudaResource(), m);
 }
 
 }  // namespace Sculptor
