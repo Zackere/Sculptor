@@ -1,4 +1,4 @@
-#include "shader_loader.hpp"
+#include "shader_provider.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -7,8 +7,13 @@
 #include <vector>
 
 namespace Sculptor {
-GLuint ShaderLoader::Load(std::string_view vertex_file_path,
-                          std::string_view fragment_file_path) {
+
+ShaderProvider::ShaderProvider(std::string vertex_shader_path,
+                               std::string fragment_shader_path)
+    : vertex_shader_path_(vertex_shader_path),
+      fragment_shader_path_(fragment_shader_path) {}
+
+GLuint ShaderProvider::Get() {
   // http://www.opengl-tutorial.org/beginners-tutorials/tutorial-2-the-first-triangle/
   // Create the shaders
   GLuint VertexShaderID = glCreateShader(GL_VERTEX_SHADER);
@@ -16,14 +21,14 @@ GLuint ShaderLoader::Load(std::string_view vertex_file_path,
 
   // Read the Vertex Shader code from the file
   std::string VertexShaderCode;
-  std::ifstream VertexShaderStream(vertex_file_path.data(), std::ios::in);
+  std::ifstream VertexShaderStream(vertex_shader_path_.data(), std::ios::in);
   if (VertexShaderStream.is_open()) {
     std::stringstream sstr;
     sstr << VertexShaderStream.rdbuf();
     VertexShaderCode = sstr.str();
     VertexShaderStream.close();
   } else {
-    std::cerr << "Impossible to open " << vertex_file_path
+    std::cerr << "Impossible to open " << vertex_shader_path_
               << ". Are you in the right directory ? Don't "
                  "forget to read the FAQ !\n";
     return 0;
@@ -31,7 +36,8 @@ GLuint ShaderLoader::Load(std::string_view vertex_file_path,
 
   // Read the Fragment Shader code from the file
   std::string FragmentShaderCode;
-  std::ifstream FragmentShaderStream(fragment_file_path.data(), std::ios::in);
+  std::ifstream FragmentShaderStream(fragment_shader_path_.data(),
+                                     std::ios::in);
   if (FragmentShaderStream.is_open()) {
     std::stringstream sstr;
     sstr << FragmentShaderStream.rdbuf();
@@ -43,7 +49,7 @@ GLuint ShaderLoader::Load(std::string_view vertex_file_path,
   int InfoLogLength;
 
   // Compile Vertex Shader
-  std::cout << "Compiling shader : " << vertex_file_path << "\n";
+  std::cout << "Compiling shader : " << vertex_shader_path_ << "\n";
   char const* VertexSourcePointer = VertexShaderCode.c_str();
   glShaderSource(VertexShaderID, 1, &VertexSourcePointer, nullptr);
   glCompileShader(VertexShaderID);
@@ -59,7 +65,7 @@ GLuint ShaderLoader::Load(std::string_view vertex_file_path,
   }
 
   // Compile Fragment Shader
-  std::cout << "Compiling shader : " << fragment_file_path << "\n";
+  std::cout << "Compiling shader : " << fragment_shader_path_ << "\n";
   char const* FragmentSourcePointer = FragmentShaderCode.c_str();
   glShaderSource(FragmentShaderID, 1, &FragmentSourcePointer, nullptr);
   glCompileShader(FragmentShaderID);
@@ -99,5 +105,4 @@ GLuint ShaderLoader::Load(std::string_view vertex_file_path,
 
   return ProgramID;
 }
-
 }  // namespace Sculptor

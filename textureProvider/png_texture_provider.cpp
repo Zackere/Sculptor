@@ -1,4 +1,4 @@
-#include "texture_loader.hpp"
+#include "png_texture_provider.hpp"
 
 #include <iostream>
 #include <vector>
@@ -6,11 +6,11 @@
 #include "../external/lodepng/lodepng.hpp"
 
 namespace Sculptor {
-GLuint TextureLoader::Load(std::string_view path) {
+GLuint PNGTextureProvider::Get() {
   GLuint texture = 0;
   std::vector<unsigned char> image_raw;
   unsigned width, height;
-  unsigned error = lodepng::decode(image_raw, width, height, path.data());
+  unsigned error = lodepng::decode(image_raw, width, height, path_.data());
   if (error)
     std::cerr << "decoder error " << error << ": " << lodepng_error_text(error)
               << std::endl;

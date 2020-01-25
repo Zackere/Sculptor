@@ -1,31 +1,28 @@
-#include "glObject.hpp"
+#include "gl_object.hpp"
 
 #include <utility>
 
 #include "../matrixApplier/matrix_applier_base.hpp"
-#include "../objLoader/obj_loader_base.hpp"
-#include "../shaderLoader/shader_loader_base.hpp"
-#include "../textureLoader/texture_loader_base.hpp"
+#include "../modelProvider/model_provider_base.hpp"
+#include "../shaderProvider/shader_provider_base.hpp"
+#include "../textureProvider/texture_provider_base.hpp"
 
 namespace Sculptor {
-glObject::glObject(std::string_view model_path,
-                   std::string_view vertex_shader_path,
-                   std::string_view fragment_shader_path,
-                   std::string_view texture_path,
-                   std::unique_ptr<ObjLoaderBase> obj_loader,
-                   std::unique_ptr<ShaderLoaderBase> shader_loader,
+glObject::glObject(std::unique_ptr<ModelProviderBase> model_provider,
+                   std::unique_ptr<ShaderProviderBase> shader_provider,
                    std::unique_ptr<MatrixApplierBase> matrix_applier,
-                   std::unique_ptr<TextureLoaderBase> texture_loader)
+                   std::unique_ptr<TextureProviderBase> texture_provider)
     : matrix_applier_(std::move(matrix_applier)) {
   glGenVertexArrays(1, &vao_);
   glBindVertexArray(vao_);
-
-  obj_loader->Load(model_path.data(), model_parameters_.verticies,
-                   model_parameters_.uvs, model_parameters_.normals);
-
   glGenBuffers(1, &model_parameters_gl_.verticies);
   glGenBuffers(1, &model_parameters_gl_.uvs);
   glGenBuffers(1, &model_parameters_gl_.normals);
+
+  model_provider->Get(model_parameters_.verticies, model_parameters_.uvs,
+                      model_parameters_.normals);
+  shader_ = shader_provider->Get();
+  texture_ = texture_provider->Get();
 
   glBindBuffer(GL_ARRAY_BUFFER, model_parameters_gl_.verticies);
   glBufferData(GL_ARRAY_BUFFER,
@@ -51,10 +48,6 @@ glObject::glObject(std::string_view model_path,
   glEnableVertexAttribArray(2);
   glBindBuffer(GL_ARRAY_BUFFER, model_parameters_gl_.normals);
   glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-
-  shader_ = shader_loader->Load(vertex_shader_path.data(),
-                                fragment_shader_path.data());
-  texture_ = texture_loader->Load(texture_path);
 }
 
 void glObject::Enable() const {

@@ -5,9 +5,9 @@
 #include <string_view>
 
 namespace Sculptor {
-class TextureLoaderBase {
+class TextureProviderBase {
  public:
-  virtual ~TextureLoaderBase() = default;
-  virtual GLuint Load(std::string_view path) = 0;
+  virtual ~TextureProviderBase() = default;
+  virtual GLuint Get() = 0;
 };
 }  // namespace Sculptor

@@ -8,29 +8,25 @@
 #include "glm/glm.hpp"
 
 namespace Sculptor {
-class ObjLoaderBase;
-class ShaderLoaderBase;
+class ModelProviderBase;
+class ShaderProviderBase;
 class MatrixApplierBase;
-class TextureLoaderBase;
+class TextureProviderBase;
 
 class glObject {
  public:
-  glObject(std::string_view model_path,
-           std::string_view vertex_shader_path,
-           std::string_view fragment_shader_path,
-           std::string_view texture_path,
-           std::unique_ptr<ObjLoaderBase> obj_loader,
-           std::unique_ptr<ShaderLoaderBase> shader_loader,
+  glObject(std::unique_ptr<ModelProviderBase> model_provider,
+           std::unique_ptr<ShaderProviderBase> shader_provider,
            std::unique_ptr<MatrixApplierBase> matrix_applier,
-           std::unique_ptr<TextureLoaderBase> texture_loader_);
+           std::unique_ptr<TextureProviderBase> texture_provider);
 
   void Render(glm::mat4 const& vp) const;
-
-  auto const& GetModelVertices() const { return model_parameters_.verticies; }
-
-  void Enable() const;
   void Transform(glm::mat4 const& m);
-  auto GetNumberOfModelVerticies() const {
+  void Enable() const;
+
+  auto GetShader() const { return shader_; }
+  auto GetTexture() const { return texture_; }
+  auto GetNumberOfModelVertices() const {
     return model_parameters_.verticies.size();
   }
 

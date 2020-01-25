@@ -1,22 +1,21 @@
-#include "obj_loader.hpp"
+#include "obj_provider.hpp"
 
 #include <iostream>
 #include <memory>
 #include <string>
 
 namespace Sculptor {
-bool ObjLoader::Load(std::string_view path,
-                     std::vector<glm::vec3>& out_vertices,
-                     std::vector<glm::vec2>& out_uvs,
-                     std::vector<glm::vec3>& out_normals) {
-  std::cout << "Loading OBJ file " << path << '\n';
+bool ObjProvider::Get(std::vector<glm::vec3>& out_vertices,
+                      std::vector<glm::vec2>& out_uvs,
+                      std::vector<glm::vec3>& out_normals) {
+  std::cout << "Loading OBJ file " << path_ << '\n';
 
   std::vector<unsigned int> vertexIndices, uvIndices, normalIndices;
   std::vector<glm::vec3> temp_vertices;
   std::vector<glm::vec2> temp_uvs;
   std::vector<glm::vec3> temp_normals;
 
-  std::unique_ptr<FILE, int (*)(FILE*)> file(std::fopen(path.data(), "r"),
+  std::unique_ptr<FILE, int (*)(FILE*)> file(std::fopen(path_.data(), "r"),
                                              fclose);
   if (!file) {
     std::cerr << "Impossible to open the file ! Are you in the right path ?\n";
@@ -44,7 +43,7 @@ bool ObjLoader::Load(std::string_view path,
         std::cerr << "fscanf error at" << __LINE__ << __FILE__ << std::endl;
       uv.y = -uv.y;  // Invert V coordinate since we will only use DDS texture,
                      // which are inverted. Remove if you want to use TGA or BMP
-                     // loaders.
+                     // Providers.
       temp_uvs.push_back(uv);
     } else if (strcmp(lineHeader, "vn") == 0) {
       glm::vec3 normal;
