@@ -6,6 +6,7 @@ set(CMAKE_CXX_CPPLINT "cpplint")
 set(CMAKE_COMPILER_IS_GNUCC TRUE)
 file(GLOB source_files  ${CMAKE_SOURCE_DIR}/[^.]*/*)
 add_executable(${PROJECT_NAME} main.cpp ${source_files})
+add_definitions(-D__INTELLISENSE__)
 
 # Intel Thread Building Blocks
 target_link_libraries(${PROJECT_NAME} tbb)
