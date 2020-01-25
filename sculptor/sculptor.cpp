@@ -45,7 +45,7 @@ int Sculptor::Main() {
   glm::mat4 projection = glm::perspective(
       glm::radians(45.0f), static_cast<float>(wWidth) / wHeight, 0.1f, 100.0f);
   glm::mat4 view =
-      glm::lookAt(glm::vec3(4, 2, 4), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+      glm::lookAt(glm::vec3(3, 2, 3), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
   auto vp = projection * view;
 
   glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);

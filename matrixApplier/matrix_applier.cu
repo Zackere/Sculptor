@@ -15,7 +15,10 @@ __constant__ float c_matrix[kMatrixSize][kMatrixSize];
 
 void __global__ ApplyUnrestrictedKernel(float* vectors, int size) {
   __shared__ float s_data[3 * kThreads];
-  for (int index = 3 * kThreads * blockIdx.x + threadIdx.x; index < size;
+  int index = 0;
+  int off = 3 * kThreads * kBlocks - threadIdx.x;
+  size -= off;
+  for (index = 3 * kThreads * blockIdx.x + threadIdx.x; index < size;
        index += 3 * kThreads * kBlocks) {
     s_data[threadIdx.x] = vectors[index];
     s_data[threadIdx.x + kThreads] = vectors[index + kThreads];
@@ -34,19 +37,31 @@ void __global__ ApplyUnrestrictedKernel(float* vectors, int size) {
     vectors[index + kThreads] = s_data[threadIdx.x + kThreads];
     vectors[index + 2 * kThreads] = s_data[threadIdx.x + 2 * kThreads];
   }
-}
-
-void __global__ ApplyRestrictedKernel(float* vectors, int size) {
-  for (int i = 0; i < size; ++i) {
-    float3 v = reinterpret_cast<float3*>(vectors)[i];
-    reinterpret_cast<float3*>(vectors)[i] =
-        float3{v.x * c_matrix[0][0] + v.y * c_matrix[1][0] +
-                   v.z * c_matrix[2][0] + c_matrix[3][0],
-               v.x * c_matrix[0][1] + v.y * c_matrix[1][1] +
-                   v.z * c_matrix[2][1] + c_matrix[3][1],
-               v.x * c_matrix[0][2] + v.y * c_matrix[1][2] +
-                   v.z * c_matrix[2][2] + c_matrix[3][2]};
-  }
+  size += off;
+  __syncthreads();
+  // Handle leftover vectors
+  if (index < size)
+    s_data[threadIdx.x] = vectors[index];
+  if (index + kThreads < size)
+    s_data[threadIdx.x + kThreads] = vectors[index + kThreads];
+  if (index + 2 * kThreads < size)
+    s_data[threadIdx.x + 2 * kThreads] = vectors[index + 2 * kThreads];
+  __syncthreads();
+  float3 v = reinterpret_cast<float3*>(s_data)[threadIdx.x];
+  reinterpret_cast<float3*>(s_data)[threadIdx.x] =
+      float3{v.x * c_matrix[0][0] + v.y * c_matrix[1][0] +
+                 v.z * c_matrix[2][0] + c_matrix[3][0],
+             v.x * c_matrix[0][1] + v.y * c_matrix[1][1] +
+                 v.z * c_matrix[2][1] + c_matrix[3][1],
+             v.x * c_matrix[0][2] + v.y * c_matrix[1][2] +
+                 v.z * c_matrix[2][2] + c_matrix[3][2]};
+  __syncthreads();
+  if (index < size)
+    vectors[index] = s_data[threadIdx.x];
+  if (index + kThreads < size)
+    vectors[index + kThreads] = s_data[threadIdx.x + kThreads];
+  if (index + 2 * kThreads < size)
+    vectors[index + 2 * kThreads] = s_data[threadIdx.x + 2 * kThreads];
 }
 }  // namespace
 void MatrixApplier::Apply(std::vector<glm::vec3>& vectors,
@@ -75,8 +90,11 @@ void MatrixApplier::Apply(cudaGraphicsResource* vectors,
   cudaMemcpyToSymbol(c_matrix, &matrix, sizeof(c_matrix), 0);
   cudaGraphicsResourceGetMappedPointer(reinterpret_cast<void**>(&dvectors),
                                        &num_bytes, vectors);
-  ApplyRestrictedKernel<<<1, 1>>>(dvectors, num_bytes / sizeof(float) / 3);
+
+  auto nvectors = num_bytes / sizeof(glm::vec3);
+  ApplyUnrestrictedKernel<<<kBlocks, kThreads>>>(dvectors, 3 * nvectors);
   cudaDeviceSynchronize();
+
   cudaGraphicsUnmapResources(1, &vectors);
 }
 }  // namespace Sculptor
