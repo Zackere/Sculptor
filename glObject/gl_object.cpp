@@ -15,38 +15,31 @@ glObject::glObject(std::unique_ptr<ModelProviderBase> model_provider,
     : matrix_applier_(std::move(matrix_applier)) {
   glGenVertexArrays(1, &vao_);
   glBindVertexArray(vao_);
-  glGenBuffers(1, &model_parameters_gl_.verticies);
-  glGenBuffers(1, &model_parameters_gl_.uvs);
-  glGenBuffers(1, &model_parameters_gl_.normals);
 
-  model_provider->Get(model_parameters_.verticies, model_parameters_.uvs,
-                      model_parameters_.normals);
+  std::vector<glm::vec3> verticies, normals;
+  std::vector<glm::vec2> uvs;
+  model_provider->Get(verticies, uvs, normals);
+
+  model_parameters_.verticies = std::make_unique<CudaGraphicsResource>(
+      verticies.data(), verticies.size() * sizeof(glm::vec3));
+  model_parameters_.uvs = std::make_unique<CudaGraphicsResource>(
+      uvs.data(), uvs.size() * sizeof(glm::vec2));
+  model_parameters_.normals = std::make_unique<CudaGraphicsResource>(
+      normals.data(), normals.size() * sizeof(glm::vec3));
+
   shader_ = shader_provider->Get();
   texture_ = texture_provider->Get();
 
-  glBindBuffer(GL_ARRAY_BUFFER, model_parameters_gl_.verticies);
-  glBufferData(GL_ARRAY_BUFFER,
-               model_parameters_.verticies.size() * 3 * sizeof(float),
-               model_parameters_.verticies.data(), GL_STATIC_DRAW);
-  glBindBuffer(GL_ARRAY_BUFFER, model_parameters_gl_.uvs);
-  glBufferData(GL_ARRAY_BUFFER,
-               model_parameters_.uvs.size() * 2 * sizeof(float),
-               model_parameters_.uvs.data(), GL_STATIC_DRAW);
-  glBindBuffer(GL_ARRAY_BUFFER, model_parameters_gl_.normals);
-  glBufferData(GL_ARRAY_BUFFER,
-               model_parameters_.normals.size() * 3 * sizeof(float),
-               model_parameters_.normals.data(), GL_STATIC_DRAW);
-
   glEnableVertexAttribArray(0);
-  glBindBuffer(GL_ARRAY_BUFFER, model_parameters_gl_.verticies);
+  glBindBuffer(GL_ARRAY_BUFFER, model_parameters_.verticies->GetGLBuffer());
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
   glEnableVertexAttribArray(1);
-  glBindBuffer(GL_ARRAY_BUFFER, model_parameters_gl_.uvs);
+  glBindBuffer(GL_ARRAY_BUFFER, model_parameters_.uvs->GetGLBuffer());
   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
 
   glEnableVertexAttribArray(2);
-  glBindBuffer(GL_ARRAY_BUFFER, model_parameters_gl_.normals);
+  glBindBuffer(GL_ARRAY_BUFFER, model_parameters_.normals->GetGLBuffer());
   glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 }
 
@@ -59,20 +52,12 @@ void glObject::Render(glm::mat4 const& vp) const {
   Enable();
   glUniformMatrix4fv(glGetUniformLocation(shader_, "mvp"), 1, GL_FALSE,
                      &vp[0][0]);
-  glDrawArrays(GL_TRIANGLES, 0, model_parameters_.verticies.size());
+  glDrawArrays(GL_TRIANGLES, 0, GetNumberOfModelVertices());
 }
 
 void glObject::Transform(glm::mat4 const& m) {
-  matrix_applier_->Apply(model_parameters_.verticies, m);
-  glBindBuffer(GL_ARRAY_BUFFER, model_parameters_gl_.verticies);
-  glBufferData(GL_ARRAY_BUFFER,
-               model_parameters_.verticies.size() * 3 * sizeof(float),
-               model_parameters_.verticies.data(), GL_STATIC_DRAW);
-  matrix_applier_->Apply(model_parameters_.normals,
+  matrix_applier_->Apply(model_parameters_.verticies->GetCudaResource(), m);
+  matrix_applier_->Apply(model_parameters_.normals->GetCudaResource(),
                          glm::transpose(glm::inverse(m)));
-  glBindBuffer(GL_ARRAY_BUFFER, model_parameters_gl_.normals);
-  glBufferData(GL_ARRAY_BUFFER,
-               model_parameters_.normals.size() * 3 * sizeof(float),
-               model_parameters_.normals.data(), GL_STATIC_DRAW);
 }
 }  // namespace Sculptor

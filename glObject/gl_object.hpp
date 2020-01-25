@@ -7,6 +7,8 @@
 #include <string_view>
 #include <vector>
 
+#include "../cudaGraphics/cudaGraphicsResource/cuda_graphics_resource.hpp"
+
 namespace Sculptor {
 class ModelProviderBase;
 class ShaderProviderBase;
@@ -27,18 +29,14 @@ class glObject {
   auto GetShader() const { return shader_; }
   auto GetTexture() const { return texture_; }
   auto GetNumberOfModelVertices() const {
-    return model_parameters_.verticies.size();
+    return model_parameters_.verticies->GetSize() / sizeof(glm::vec3);
   }
 
  private:
   struct {
-    std::vector<glm::vec3> verticies = {};
-    std::vector<glm::vec2> uvs = {};
-    std::vector<glm::vec3> normals = {};
+    std::unique_ptr<CudaGraphicsResource> verticies = nullptr, uvs = nullptr,
+                                          normals = nullptr;
   } model_parameters_ = {};
-  struct {
-    GLuint verticies = 0, uvs = 0, normals = 0;
-  } model_parameters_gl_ = {};
   GLuint shader_ = 0;
   GLuint vao_ = 0;
   GLuint texture_ = 0;
