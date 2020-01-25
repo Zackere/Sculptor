@@ -4,7 +4,7 @@ set(CMAKE_CXX_CLANG_TIDY clang-tidy -checks=-*,cert-*,cppcoreguidelines-*,clang-
 set(CMAKE_CXX_CPPLINT "cpplint")
 
 set(CMAKE_COMPILER_IS_GNUCC TRUE)
-file(GLOB source_files  ${CMAKE_SOURCE_DIR}/src/*.cu ${CMAKE_SOURCE_DIR}/src/*.cpp ${CMAKE_SOURCE_DIR}/include/*.hpp)
+file(GLOB source_files  ${CMAKE_SOURCE_DIR}/*/*)
 add_executable(${PROJECT_NAME} main.cpp ${source_files})
 
 # Intel Thread Building Blocks
