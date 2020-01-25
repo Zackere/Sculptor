@@ -45,7 +45,7 @@ int Sculptor::Main() {
   glm::mat4 projection = glm::perspective(
       glm::radians(45.0f), static_cast<float>(wWidth) / wHeight, 0.1f, 100.0f);
   glm::mat4 view =
-      glm::lookAt(glm::vec3(3, 2, 3), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+      glm::lookAt(glm::vec3(3, 0, 3), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
   auto vp = projection * view;
 
   glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
@@ -66,14 +66,26 @@ int Sculptor::Main() {
                        std::make_unique<HollowCubeGenerator>(2.f / ncubes),
                        std::make_unique<MatrixApplier>());
 
+  glObject drill(
+      std::make_unique<ObjProvider>(base + "model/drill.obj"),
+      std::make_unique<ShaderProvider>(base + "shader/drill/drill_shader.vs",
+                                       base + "shader/drill/drill_shader.fs"),
+      std::make_unique<MatrixApplier>(), nullptr);
+  drill.Transform(glm::rotate(
+      glm::scale(glm::translate(glm::mat4(1.f), glm::vec3(1.5, 0, 0)),
+                 glm::vec3(0.03, 0.03, 0.03)),
+      glm::pi<float>() / 2, glm::vec3(0, 0, -1)));
+
   do {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     gi.Render(vp);
+    drill.Render(vp);
 
     glfwSwapBuffers(window);
 
     gi.Transform(glm::rotate(glm::mat4(1.f), 0.01f, glm::vec3(0, 1, 0)));
+    drill.Transform(glm::rotate(glm::mat4(1.f), 0.1f, glm::vec3(-1, 0, 0)));
 
     glfwPollEvents();
   } while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS &&

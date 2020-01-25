@@ -28,7 +28,8 @@ glObject::glObject(std::unique_ptr<ModelProviderBase> model_provider,
       normals.data(), normals.size() * sizeof(glm::vec3));
 
   shader_ = shader_provider->Get();
-  texture_ = texture_provider->Get();
+  if (texture_provider)
+    texture_ = texture_provider->Get();
 
   glEnableVertexAttribArray(0);
   glBindBuffer(GL_ARRAY_BUFFER, model_parameters_.verticies->GetGLBuffer());
