@@ -14,8 +14,8 @@ class glObject;
 
 class glInstancedObject {
  public:
-  glInstancedObject(int nobjects_start,
-                    int nobjects_max,
+  glInstancedObject(int ninstances_init,
+                    int ninstances_max,
                     std::unique_ptr<glObject> reference_model,
                     std::unique_ptr<ShapeGeneratorBase> shape_generator,
                     std::unique_ptr<MatrixApplierBase> matrix_applier);
@@ -23,15 +23,14 @@ class glInstancedObject {
 
   void Render(glm::mat4 const& vp) const;
   void Transform(glm::mat4 const& m);
-  CudaGraphicsResource<glm::vec3>* GetInstancesPosisitions() {
-    return positions_buffer_.get();
-  }
-  int GetNumberOfInstances() const { return positions_buffer_->GetSize(); }
+  int GetNumberOfInstances() const { return x_positions_buffer_.GetSize(); }
 
  private:
   std::unique_ptr<glObject> reference_model_;
   std::unique_ptr<ShapeGeneratorBase> shape_generator_;
-  std::unique_ptr<CudaGraphicsResource<glm::vec3>> positions_buffer_;
+  CudaGraphicsResource<float> x_positions_buffer_;
+  CudaGraphicsResource<float> y_positions_buffer_;
+  CudaGraphicsResource<float> z_positions_buffer_;
   std::unique_ptr<MatrixApplierBase> matrix_applier_;
 };
 }  // namespace Sculptor

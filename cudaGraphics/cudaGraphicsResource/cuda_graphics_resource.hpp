@@ -14,7 +14,7 @@ class CudaGraphicsResource {
 
   auto GetGLBuffer() { return gl_buffer_; }
   auto* GetCudaResource() { return cuda_resource_.get(); }
-  auto GetSize() { return size_; }
+  auto GetSize() const { return size_; }
 
   void SetData(ContentType const* data, size_t nelems);
   void PopBack() { --size_; }

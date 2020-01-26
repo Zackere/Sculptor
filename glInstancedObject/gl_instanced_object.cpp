@@ -12,28 +12,51 @@
 
 namespace Sculptor {
 glInstancedObject::glInstancedObject(
-    int nobjects_start,
-    int nobjects_max,
+    int ninstances_init,
+    int ninstances_max,
     std::unique_ptr<glObject> reference_model,
     std::unique_ptr<ShapeGeneratorBase> shape_generator,
     std::unique_ptr<MatrixApplierBase> matrix_applier)
     : reference_model_(std::move(reference_model)),
       shape_generator_(std::move(shape_generator)),
-      positions_buffer_(nullptr),
+      x_positions_buffer_(ninstances_max),
+      y_positions_buffer_(ninstances_max),
+      z_positions_buffer_(ninstances_max),
       matrix_applier_(std::move(matrix_applier)) {
-  glVertexAttribDivisor(
-      glGetAttribLocation(reference_model_->GetShader(), "offset"), 1);
+  std::vector<float> x_positions, y_positions, z_positions;
+  x_positions.reserve(shape_generator_->GetNumberOfOutputs(ninstances_init));
+  y_positions.reserve(x_positions.capacity());
+  z_positions.reserve(x_positions.capacity());
+  for (auto& v : shape_generator_->Generate(ninstances_init)) {
+    x_positions.emplace_back(v.x);
+    y_positions.emplace_back(v.y);
+    z_positions.emplace_back(v.z);
+  }
 
-  std::vector<glm::vec3> positions = shape_generator_->Generate(nobjects_start);
-  positions_buffer_ =
-      std::make_unique<CudaGraphicsResource<glm::vec3>>(nobjects_max);
-  positions_buffer_->SetData(positions.data(), positions.size());
+  x_positions_buffer_.SetData(x_positions.data(), x_positions.size());
+  y_positions_buffer_.SetData(y_positions.data(), y_positions.size());
+  z_positions_buffer_.SetData(z_positions.data(), z_positions.size());
 
-  auto materialOffsetsID =
-      glGetAttribLocation(reference_model_->GetShader(), "offset");
-  glEnableVertexAttribArray(materialOffsetsID);
-  glBindBuffer(GL_ARRAY_BUFFER, positions_buffer_->GetGLBuffer());
-  glVertexAttribPointer(materialOffsetsID, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+  auto materialXOffsetsID =
+      glGetAttribLocation(reference_model_->GetShader(), "offset_x");
+  glVertexAttribDivisor(materialXOffsetsID, 1);
+  glEnableVertexAttribArray(materialXOffsetsID);
+  glBindBuffer(GL_ARRAY_BUFFER, x_positions_buffer_.GetGLBuffer());
+  glVertexAttribPointer(materialXOffsetsID, 1, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+  auto materialYOffsetsID =
+      glGetAttribLocation(reference_model_->GetShader(), "offset_y");
+  glVertexAttribDivisor(materialYOffsetsID, 1);
+  glEnableVertexAttribArray(materialYOffsetsID);
+  glBindBuffer(GL_ARRAY_BUFFER, y_positions_buffer_.GetGLBuffer());
+  glVertexAttribPointer(materialYOffsetsID, 1, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+  auto materialZOffsetsID =
+      glGetAttribLocation(reference_model_->GetShader(), "offset_z");
+  glVertexAttribDivisor(materialZOffsetsID, 1);
+  glEnableVertexAttribArray(materialZOffsetsID);
+  glBindBuffer(GL_ARRAY_BUFFER, z_positions_buffer_.GetGLBuffer());
+  glVertexAttribPointer(materialZOffsetsID, 1, GL_FLOAT, GL_FALSE, 0, nullptr);
 }
 
 glInstancedObject::~glInstancedObject() = default;
@@ -50,8 +73,10 @@ void glInstancedObject::Render(glm::mat4 const& vp) const {
 
 void glInstancedObject::Transform(glm::mat4 const& m) {
   reference_model_->Transform(m);
-  matrix_applier_->Apply(positions_buffer_->GetCudaResource(),
-                         positions_buffer_->GetSize(), m);
+  matrix_applier_->Apply(x_positions_buffer_.GetCudaResource(),
+                         y_positions_buffer_.GetCudaResource(),
+                         z_positions_buffer_.GetCudaResource(),
+                         x_positions_buffer_.GetSize(), m);
 }
 
 }  // namespace Sculptor

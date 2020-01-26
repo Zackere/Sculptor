@@ -2,6 +2,7 @@
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
 #include <device_launch_parameters.h>
+#include <stdio.h>
 
 #include "matrix_applier.hpp"
 
@@ -13,7 +14,7 @@ constexpr int kBlocks = 32;
 
 __constant__ float c_matrix[kMatrixSize][kMatrixSize];
 
-void __global__ ApplyUnrestrictedKernel(float* vectors, int size) {
+__global__ void ApplyKernel(float* vectors, int size) {
   __shared__ float s_data[3 * kThreads];
   int index = 0;
   int off = 3 * kThreads * kBlocks - threadIdx.x - 1;
@@ -63,25 +64,22 @@ void __global__ ApplyUnrestrictedKernel(float* vectors, int size) {
   if (index + 2 * kThreads < size)
     vectors[index + 2 * kThreads] = s_data[threadIdx.x + 2 * kThreads];
 }
-}  // namespace
-void MatrixApplier::Apply(std::vector<glm::vec3>& vectors,
-                          glm::mat4 const& matrix) {
-  auto extra_space = vectors.size() % (kThreads * kBlocks);
-  if (extra_space != 0)
-    extra_space = kThreads * kBlocks - extra_space;
-
-  float* dvectors = nullptr;
-  cudaMalloc(&dvectors, sizeof(float) * 3 * (vectors.size() + extra_space));
-  cudaMemcpy(dvectors, vectors.data(), sizeof(float) * 3 * vectors.size(),
-             cudaMemcpyHostToDevice);
-  cudaMemcpyToSymbol(c_matrix, &matrix, sizeof(c_matrix), 0);
-  ApplyUnrestrictedKernel<<<kBlocks, kThreads>>>(
-      dvectors, 3 * (vectors.size() + extra_space));
-  cudaMemcpy(vectors.data(), dvectors, sizeof(float) * 3 * vectors.size(),
-             cudaMemcpyDeviceToHost);
-  cudaDeviceSynchronize();
-  cudaFree(dvectors);
+__global__ void ApplyKernel(float* x, float* y, float* z, int size) {
+  for (int i = kThreads * blockIdx.x + threadIdx.x; i < size;
+       i += kThreads * kBlocks) {
+    float3 v{x[i], y[i], z[i]};
+    v = float3{v.x * c_matrix[0][0] + v.y * c_matrix[1][0] +
+                   v.z * c_matrix[2][0] + c_matrix[3][0],
+               v.x * c_matrix[0][1] + v.y * c_matrix[1][1] +
+                   v.z * c_matrix[2][1] + c_matrix[3][1],
+               v.x * c_matrix[0][2] + v.y * c_matrix[1][2] +
+                   v.z * c_matrix[2][2] + c_matrix[3][2]};
+    x[i] = v.x;
+    y[i] = v.y;
+    z[i] = v.z;
+  }
 }
+}  // namespace
 void MatrixApplier::Apply(cudaGraphicsResource* vectors,
                           int nvectors,
                           glm::mat4 const& matrix) {
@@ -92,9 +90,34 @@ void MatrixApplier::Apply(cudaGraphicsResource* vectors,
   cudaGraphicsResourceGetMappedPointer(reinterpret_cast<void**>(&dvectors),
                                        &num_bytes, vectors);
 
-  ApplyUnrestrictedKernel<<<kBlocks, kThreads>>>(dvectors, 3 * nvectors);
+  ApplyKernel<<<kBlocks, kThreads>>>(dvectors, 3 * nvectors);
   cudaDeviceSynchronize();
 
   cudaGraphicsUnmapResources(1, &vectors);
+}
+void MatrixApplier::Apply(cudaGraphicsResource* x,
+                          cudaGraphicsResource* y,
+                          cudaGraphicsResource* z,
+                          int nvectors,
+                          glm::mat4 const& matrix) {
+  cudaGraphicsMapResources(1, &x);
+  cudaGraphicsMapResources(1, &y);
+  cudaGraphicsMapResources(1, &z);
+
+  float *dx, *dy, *dz;
+  size_t num_bytes;
+  cudaGraphicsResourceGetMappedPointer(reinterpret_cast<void**>(&dx),
+                                       &num_bytes, x);
+  cudaGraphicsResourceGetMappedPointer(reinterpret_cast<void**>(&dy),
+                                       &num_bytes, y);
+  cudaGraphicsResourceGetMappedPointer(reinterpret_cast<void**>(&dz),
+                                       &num_bytes, z);
+  cudaMemcpyToSymbol(c_matrix, &matrix, sizeof(c_matrix), 0);
+  ApplyKernel<<<kBlocks, kThreads>>>(dx, dy, dz, nvectors);
+  cudaDeviceSynchronize();
+
+  cudaGraphicsUnmapResources(1, &z);
+  cudaGraphicsUnmapResources(1, &y);
+  cudaGraphicsUnmapResources(1, &x);
 }
 }  // namespace Sculptor
