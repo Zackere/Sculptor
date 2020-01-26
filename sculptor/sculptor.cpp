@@ -9,11 +9,12 @@
 #include <string>
 #include <utility>
 
-#include "../glInstancedObject/gl_instanced_object.hpp"
 #include "../glObject/gl_object.hpp"
 #include "../matrixApplier/matrix_applier.hpp"
 #include "../modelProvider/obj_provider.hpp"
+#include "../sculpting_material/sculpting_material.hpp"
 #include "../shaderProvider/shader_provider.hpp"
+#include "../shapeGenerator/cube_generator.hpp"
 #include "../shapeGenerator/hollow_cube_generator.hpp"
 #include "../textureProvider/png_texture_provider.hpp"
 
@@ -62,9 +63,12 @@ int Sculptor::Main() {
   cube->Transform(glm::scale(
       glm::mat4(1.f), glm::vec3(1.f / ncubes, 1.f / ncubes, 1.f / ncubes)));
 
-  glInstancedObject gi(ncubes, ncubes * ncubes * ncubes, std::move(cube),
-                       std::make_unique<HollowCubeGenerator>(2.f / ncubes),
-                       std::make_unique<MatrixApplier>());
+  SculptingMaterial material(
+      ncubes, ncubes - 2, std::move(cube),
+      std::make_unique<HollowCubeGenerator>(2.f / ncubes),
+      std::make_unique<CubeGenerator>(
+          std::make_unique<HollowCubeGenerator>(2.f / ncubes)),
+      std::make_unique<MatrixApplier>());
 
   glObject drill(
       std::make_unique<ObjProvider>(base + "model/drill.obj"),
@@ -77,14 +81,18 @@ int Sculptor::Main() {
       glm::pi<float>() / 2, glm::vec3(0, 0, -1)));
 
   do {
+    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+      material.RotateLeft();
+    else if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+      material.RotateRight();
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    gi.Render(vp);
+    material.Render(vp);
     drill.Render(vp);
 
     glfwSwapBuffers(window);
 
-    gi.Transform(glm::rotate(glm::mat4(1.f), 0.01f, glm::vec3(0, 1, 0)));
     drill.Transform(glm::rotate(glm::mat4(1.f), 0.1f, glm::vec3(-1, 0, 0)));
 
     glfwPollEvents();

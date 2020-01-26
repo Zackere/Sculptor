@@ -41,6 +41,6 @@ class glObject {
   GLuint shader_ = 0;
   GLuint vao_ = 0;
   GLuint texture_ = 0;
-  std::unique_ptr<MatrixApplierBase> matrix_applier_ = nullptr;
+  std::unique_ptr<MatrixApplierBase> matrix_applier_;
 };
 }  // namespace Sculptor
