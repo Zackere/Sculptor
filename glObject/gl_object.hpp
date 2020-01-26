@@ -8,11 +8,11 @@
 #include <vector>
 
 #include "../cudaGraphics/cudaGraphicsResource/cuda_graphics_resource.hpp"
+#include "../matrixApplier/matrix_applier_base.hpp"
 
 namespace Sculptor {
 class ModelProviderBase;
 class ShaderProviderBase;
-class MatrixApplierBase;
 class TextureProviderBase;
 
 class glObject {
@@ -31,6 +31,7 @@ class glObject {
   auto GetNumberOfModelVertices() const {
     return model_parameters_.verticies->GetSize();
   }
+  auto GetAvgPosition() const { return average_pos_; }
 
  private:
   struct {
@@ -42,5 +43,6 @@ class glObject {
   GLuint vao_ = 0;
   GLuint texture_ = 0;
   std::unique_ptr<MatrixApplierBase> matrix_applier_;
+  glm::vec3 average_pos_ = {};
 };
 }  // namespace Sculptor

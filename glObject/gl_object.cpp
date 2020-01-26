@@ -1,5 +1,7 @@
 #include "gl_object.hpp"
 
+#include <algorithm>
+#include <execution>
 #include <utility>
 
 #include "../matrixApplier/matrix_applier_base.hpp"
@@ -19,6 +21,9 @@ glObject::glObject(std::unique_ptr<ModelProviderBase> model_provider,
   std::vector<glm::vec3> verticies, normals;
   std::vector<glm::vec2> uvs;
   model_provider->Get(verticies, uvs, normals);
+  average_pos_ =
+      std::reduce(std::execution::par, verticies.begin(), verticies.end()) /
+      static_cast<float>(verticies.size());
 
   model_parameters_.verticies =
       std::make_unique<CudaGraphicsResource<glm::vec3>>(verticies.size());
@@ -67,5 +72,6 @@ void glObject::Transform(glm::mat4 const& m) {
   matrix_applier_->Apply(model_parameters_.normals->GetCudaResource(),
                          model_parameters_.normals->GetSize(),
                          glm::transpose(glm::inverse(m)));
+  average_pos_ = m * glm::vec4(average_pos_, 1.f);
 }
 }  // namespace Sculptor

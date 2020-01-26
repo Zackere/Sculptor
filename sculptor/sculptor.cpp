@@ -9,6 +9,7 @@
 #include <string>
 #include <utility>
 
+#include "../drill/drill.hpp"
 #include "../glObject/gl_object.hpp"
 #include "../matrixApplier/matrix_applier.hpp"
 #include "../modelProvider/obj_provider.hpp"
@@ -70,21 +71,28 @@ int Sculptor::Main() {
           std::make_unique<HollowCubeGenerator>(2.f / ncubes)),
       std::make_unique<MatrixApplier>());
 
-  glObject drill(
+  std::unique_ptr<glObject> drill_model = std::make_unique<glObject>(
       std::make_unique<ObjProvider>(base + "model/drill.obj"),
       std::make_unique<ShaderProvider>(base + "shader/drill/drill_shader.vs",
                                        base + "shader/drill/drill_shader.fs"),
       std::make_unique<MatrixApplier>(), nullptr);
-  drill.Transform(glm::rotate(
-      glm::scale(glm::translate(glm::mat4(1.f), glm::vec3(1.5, 0, 0)),
-                 glm::vec3(0.03, 0.03, 0.03)),
-      glm::pi<float>() / 2, glm::vec3(0, 0, -1)));
+  drill_model->Transform(
+      glm::scale(glm::mat4(1.f), glm::vec3(0.03, 0.03, 0.03)));
+  Drill drill(std::move(drill_model));
 
   do {
     if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
       material.RotateLeft();
     else if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
       material.RotateRight();
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+      drill.MoveForward();
+    else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+      drill.MoveBackward();
+    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+      drill.MoveUp();
+    else if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+      drill.MoveDown();
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -93,7 +101,7 @@ int Sculptor::Main() {
 
     glfwSwapBuffers(window);
 
-    drill.Transform(glm::rotate(glm::mat4(1.f), 0.1f, glm::vec3(-1, 0, 0)));
+    drill.Spin();
 
     glfwPollEvents();
   } while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS &&
