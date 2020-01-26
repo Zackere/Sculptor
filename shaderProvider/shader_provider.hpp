@@ -10,8 +10,8 @@
 namespace Sculptor {
 class ShaderProvider : public ShaderProviderBase {
  public:
-  ShaderProvider(std::string vertex_shader_path,
-                 std::string fragment_shader_path);
+  ShaderProvider(std::string_view vertex_shader_path,
+                 std::string_view fragment_shader_path);
   ~ShaderProvider() override = default;
 
   GLuint Get() override;

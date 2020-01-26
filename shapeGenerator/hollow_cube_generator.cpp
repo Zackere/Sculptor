@@ -9,7 +9,7 @@ std::vector<glm::vec3> HollowCubeGenerator::Generate(int ncubes_on_side) {
     ret.emplace_back(0, 0, 0);
     return ret;
   }
-  ret.reserve(ncubes_on_side * 6 * (ncubes_on_side - 2) + 8);
+  ret.reserve(GetNumberOfOutputs(ncubes_on_side));
   const auto start = -(ncubes_on_side - 3) * side_len_ / 2;
   float y, z;
   for (auto x : {start - side_len_, -start + side_len_}) {

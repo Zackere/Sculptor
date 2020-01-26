@@ -4,15 +4,16 @@
 #include <memory>
 
 #include "../cudaGraphics/cudaGraphicsResource/cuda_graphics_resource.hpp"
-#include "../glObject/gl_object.hpp"
 
 namespace Sculptor {
-class MatrixApplierBase;
+class glObject;
+
 class Drill {
  public:
   Drill(std::unique_ptr<glObject> model);
+  ~Drill();
 
-  void Render(glm::mat4 const& vp) { model_->Render(vp); }
+  void Render(glm::mat4 const& vp);
 
   void Spin();
   void MoveUp();
@@ -21,7 +22,7 @@ class Drill {
   void MoveBackward();
 
  private:
-  std::unique_ptr<glObject> model_ = nullptr;
+  std::unique_ptr<glObject> model_;
   glm::vec3 forward_ = {};
 };
 }  // namespace Sculptor

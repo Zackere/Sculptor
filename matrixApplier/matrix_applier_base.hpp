@@ -3,7 +3,6 @@
 #include <cuda_gl_interop.h>
 
 #include <glm/glm.hpp>
-#include <memory>
 #include <vector>
 
 namespace Sculptor {

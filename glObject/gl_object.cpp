@@ -14,7 +14,8 @@ glObject::glObject(std::unique_ptr<ModelProviderBase> model_provider,
                    std::unique_ptr<ShaderProviderBase> shader_provider,
                    std::unique_ptr<MatrixApplierBase> matrix_applier,
                    std::unique_ptr<TextureProviderBase> texture_provider)
-    : matrix_applier_(std::move(matrix_applier)) {
+    : model_parameters_{nullptr, nullptr, nullptr},
+      matrix_applier_(std::move(matrix_applier)) {
   glGenVertexArrays(1, &vao_);
   glBindVertexArray(vao_);
 
@@ -53,6 +54,8 @@ glObject::glObject(std::unique_ptr<ModelProviderBase> model_provider,
   glBindBuffer(GL_ARRAY_BUFFER, model_parameters_.normals->GetGLBuffer());
   glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 }
+
+glObject::~glObject() = default;
 
 void glObject::Enable() const {
   glUseProgram(shader_);

@@ -16,6 +16,6 @@ class HollowCubeGenerator : public ShapeGeneratorBase {
   }
 
  private:
-  float side_len_;
+  float side_len_ = 0;
 };
 }  // namespace Sculptor

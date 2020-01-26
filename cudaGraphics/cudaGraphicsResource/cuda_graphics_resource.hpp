@@ -17,7 +17,7 @@ class CudaGraphicsResource {
   auto GetSize() { return size_; }
 
   void SetData(ContentType const* data, size_t nelems);
-  void PopBack() { --size_; };
+  void PopBack() { --size_; }
   void PushBack(ContentType const& elem);
 
  private:

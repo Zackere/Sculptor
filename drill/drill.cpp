@@ -3,14 +3,21 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <utility>
 
-namespace Sculptor {
+#include "../glObject/gl_object.hpp"
 
+namespace Sculptor {
 Drill::Drill(std::unique_ptr<glObject> model) : model_(std::move(model)) {
   model_->Transform(
       glm::rotate(glm::translate(glm::mat4(1.f), glm::vec3(1.5, 0, 0)),
                   glm::pi<float>() / 2, glm::vec3(0, 0, -1)));
 
   forward_ = glm::vec3(-1, 0, 0);
+}
+
+Drill::~Drill() = default;
+
+void Drill::Render(glm::mat4 const& vp) {
+  model_->Render(vp);
 }
 
 void Drill::Spin() {

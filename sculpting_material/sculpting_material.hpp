@@ -4,12 +4,12 @@
 #include <memory>
 
 #include "../cudaGraphics/cudaGraphicsResource/cuda_graphics_resource.hpp"
-#include "../glInstancedObject/gl_instanced_object.hpp"
 
 namespace Sculptor {
 class MatrixApplierBase;
 class ShapeGeneratorBase;
 class glObject;
+class glInstancedObject;
 
 class SculptingMaterial {
  public:
@@ -19,6 +19,7 @@ class SculptingMaterial {
                     std::unique_ptr<ShapeGeneratorBase> outside_shape_generator,
                     std::unique_ptr<ShapeGeneratorBase> inside_shape_generator,
                     std::unique_ptr<MatrixApplierBase> matrix_applier);
+  ~SculptingMaterial();
 
   void Render(glm::mat4 const& vp);
   void RotateLeft();

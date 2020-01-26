@@ -3,6 +3,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <utility>
 
+#include "../glInstancedObject/gl_instanced_object.hpp"
 #include "../glObject/gl_object.hpp"
 #include "../matrixApplier/matrix_applier.hpp"
 #include "../shapeGenerator/shape_generator_base.hpp"
@@ -28,6 +29,8 @@ SculptingMaterial::SculptingMaterial(
   auto offsets = inside_shape_generator->Generate(nobjects_invisible);
   invisible_material_.SetData(offsets.data(), offsets.size());
 }
+
+SculptingMaterial::~SculptingMaterial() = default;
 
 void SculptingMaterial::Render(glm::mat4 const& vp) {
   visible_material_->Render(vp);

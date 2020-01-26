@@ -1,7 +1,9 @@
 #include "gl_instanced_object.hpp"
 
 #include <utility>
+#include <vector>
 
+#include "../glObject/gl_object.hpp"
 #include "../matrixApplier/matrix_applier_base.hpp"
 #include "../modelProvider/model_provider_base.hpp"
 #include "../shaderProvider/shader_provider_base.hpp"
@@ -17,11 +19,12 @@ glInstancedObject::glInstancedObject(
     std::unique_ptr<MatrixApplierBase> matrix_applier)
     : reference_model_(std::move(reference_model)),
       shape_generator_(std::move(shape_generator)),
+      positions_buffer_(nullptr),
       matrix_applier_(std::move(matrix_applier)) {
   glVertexAttribDivisor(
       glGetAttribLocation(reference_model_->GetShader(), "offset"), 1);
 
-  auto positions = shape_generator_->Generate(nobjects_start);
+  std::vector<glm::vec3> positions = shape_generator_->Generate(nobjects_start);
   positions_buffer_ =
       std::make_unique<CudaGraphicsResource<glm::vec3>>(nobjects_max);
   positions_buffer_->SetData(positions.data(), positions.size());
@@ -32,6 +35,8 @@ glInstancedObject::glInstancedObject(
   glBindBuffer(GL_ARRAY_BUFFER, positions_buffer_->GetGLBuffer());
   glVertexAttribPointer(materialOffsetsID, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 }
+
+glInstancedObject::~glInstancedObject() = default;
 
 void glInstancedObject::Render(glm::mat4 const& vp) const {
   reference_model_->Enable();
