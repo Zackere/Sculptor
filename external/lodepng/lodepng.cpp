@@ -29,7 +29,7 @@ Rename this file to lodepng.cpp to use it for C++, or to lodepng.c to use it for
 C.
 */
 
-#include "lodepng.h"
+#include "lodepng.hpp"
 
 #ifdef LODEPNG_COMPILE_DISK
 #include <limits.h> /* LONG_MAX */
@@ -798,10 +798,10 @@ typedef struct HuffmanTree {
 } HuffmanTree;
 
 static void HuffmanTree_init(HuffmanTree* tree) {
-  tree->codes = 0;
-  tree->lengths = 0;
-  tree->table_len = 0;
-  tree->table_value = 0;
+  tree->codes = nullptr;
+  tree->lengths = nullptr;
+  tree->table_len = nullptr;
+  tree->table_value = nullptr;
 }
 
 static void HuffmanTree_cleanup(HuffmanTree* tree) {

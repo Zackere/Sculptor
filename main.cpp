@@ -1,6 +1,5 @@
-#include "include/sculptor.hpp"
+#include "./sculptor/sculptor.hpp"
 
-auto main() -> int {
-  Sculptor::Sculptor sculptor;
-  return sculptor.Main();
+int main() {
+  return Sculptor::Sculptor().Main();
 }
