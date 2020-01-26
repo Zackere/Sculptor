@@ -3,7 +3,6 @@ project(Sculptor LANGUAGES CXX)
 set(CMAKE_CXX_CLANG_TIDY clang-tidy -checks=-*,cert-*,cppcoreguidelines-*,clang-analyzer-*,performance-*,modernize-*,bugprone-*)
 set(CMAKE_CXX_CPPLINT "cpplint")
 
-set(CMAKE_COMPILER_IS_GNUCC TRUE)
 file(GLOB source_files
     ${CMAKE_SOURCE_DIR}/*/*.cpp
     ${CMAKE_SOURCE_DIR}/*/*.hpp
@@ -11,7 +10,7 @@ file(GLOB source_files
     ${CMAKE_SOURCE_DIR}/*/*/*.hpp
     ${CMAKE_SOURCE_DIR}/*/*/*.cpp
     ${CMAKE_SOURCE_DIR}/*/*/*.cu
-    )
+)
 add_executable(${PROJECT_NAME} main.cpp ${source_files})
 add_definitions(-D__INTELLISENSE__)
 

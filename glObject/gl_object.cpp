@@ -20,12 +20,17 @@ glObject::glObject(std::unique_ptr<ModelProviderBase> model_provider,
   std::vector<glm::vec2> uvs;
   model_provider->Get(verticies, uvs, normals);
 
-  model_parameters_.verticies = std::make_unique<CudaGraphicsResource>(
-      verticies.data(), verticies.size() * sizeof(glm::vec3));
-  model_parameters_.uvs = std::make_unique<CudaGraphicsResource>(
-      uvs.data(), uvs.size() * sizeof(glm::vec2));
-  model_parameters_.normals = std::make_unique<CudaGraphicsResource>(
-      normals.data(), normals.size() * sizeof(glm::vec3));
+  model_parameters_.verticies =
+      std::make_unique<CudaGraphicsResource<glm::vec3>>(verticies.size());
+  model_parameters_.verticies->SetData(verticies.data(), verticies.size());
+
+  model_parameters_.uvs =
+      std::make_unique<CudaGraphicsResource<glm::vec2>>(uvs.size());
+  model_parameters_.uvs->SetData(uvs.data(), uvs.size());
+
+  model_parameters_.normals =
+      std::make_unique<CudaGraphicsResource<glm::vec3>>(normals.size());
+  model_parameters_.normals->SetData(normals.data(), normals.size());
 
   shader_ = shader_provider->Get();
   if (texture_provider)
@@ -57,8 +62,10 @@ void glObject::Render(glm::mat4 const& vp) const {
 }
 
 void glObject::Transform(glm::mat4 const& m) {
-  matrix_applier_->Apply(model_parameters_.verticies->GetCudaResource(), m);
+  matrix_applier_->Apply(model_parameters_.verticies->GetCudaResource(),
+                         model_parameters_.verticies->GetSize(), m);
   matrix_applier_->Apply(model_parameters_.normals->GetCudaResource(),
+                         model_parameters_.normals->GetSize(),
                          glm::transpose(glm::inverse(m)));
 }
 }  // namespace Sculptor

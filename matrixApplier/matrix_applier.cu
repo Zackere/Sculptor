@@ -16,7 +16,7 @@ __constant__ float c_matrix[kMatrixSize][kMatrixSize];
 void __global__ ApplyUnrestrictedKernel(float* vectors, int size) {
   __shared__ float s_data[3 * kThreads];
   int index = 0;
-  int off = 3 * kThreads * kBlocks - threadIdx.x;
+  int off = 3 * kThreads * kBlocks - threadIdx.x - 1;
   size -= off;
   for (index = 3 * kThreads * blockIdx.x + threadIdx.x; index < size;
        index += 3 * kThreads * kBlocks) {
@@ -83,6 +83,7 @@ void MatrixApplier::Apply(std::vector<glm::vec3>& vectors,
   cudaFree(dvectors);
 }
 void MatrixApplier::Apply(cudaGraphicsResource* vectors,
+                          int nvectors,
                           glm::mat4 const& matrix) {
   cudaGraphicsMapResources(1, &vectors);
   float* dvectors = nullptr;
@@ -91,7 +92,6 @@ void MatrixApplier::Apply(cudaGraphicsResource* vectors,
   cudaGraphicsResourceGetMappedPointer(reinterpret_cast<void**>(&dvectors),
                                        &num_bytes, vectors);
 
-  auto nvectors = num_bytes / sizeof(glm::vec3);
   ApplyUnrestrictedKernel<<<kBlocks, kThreads>>>(dvectors, 3 * nvectors);
   cudaDeviceSynchronize();
 

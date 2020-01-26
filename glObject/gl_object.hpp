@@ -29,13 +29,14 @@ class glObject {
   auto GetShader() const { return shader_; }
   auto GetTexture() const { return texture_; }
   auto GetNumberOfModelVertices() const {
-    return model_parameters_.verticies->GetSize() / sizeof(glm::vec3);
+    return model_parameters_.verticies->GetSize();
   }
 
  private:
   struct {
-    std::unique_ptr<CudaGraphicsResource> verticies = nullptr, uvs = nullptr,
-                                          normals = nullptr;
+    std::unique_ptr<CudaGraphicsResource<glm::vec3>> verticies = nullptr,
+                                                     normals = nullptr;
+    std::unique_ptr<CudaGraphicsResource<glm::vec2>> uvs = nullptr;
   } model_parameters_ = {};
   GLuint shader_ = 0;
   GLuint vao_ = 0;
