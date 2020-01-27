@@ -4,28 +4,28 @@
 #include <memory>
 
 #include "../cudaGraphics/cudaGraphicsResource/cuda_graphics_resource.hpp"
+#include "../shapeGenerator/cube_generator.hpp"
+#include "../shapeGenerator/hollow_cube_generator.hpp"
 
 namespace Sculptor {
 class MatrixApplierBase;
-class ShapeGeneratorBase;
 class glObject;
 class glInstancedObject;
 
-class SculptingMaterial {
+class CubeSculptingMaterial {
  public:
-  SculptingMaterial(int nobjects_start,
-                    int nobjects_max,
-                    std::unique_ptr<glObject> reference_model,
-                    std::unique_ptr<ShapeGeneratorBase> outside_shape_generator,
-                    std::unique_ptr<ShapeGeneratorBase> inside_shape_generator,
-                    std::unique_ptr<MatrixApplierBase> matrix_applier);
-  ~SculptingMaterial();
+  CubeSculptingMaterial(int ncubes_per_side,
+                        std::unique_ptr<glObject> reference_model,
+                        std::unique_ptr<MatrixApplierBase> matrix_applier);
+  ~CubeSculptingMaterial();
 
   void Render(glm::mat4 const& vp);
   void RotateLeft();
   void RotateRight();
 
  private:
+  HollowCubeGenerator hollow_cube_generator_;
+  CubeGenerator cube_generator_;
   std::unique_ptr<glInstancedObject> visible_material_;
   CudaGraphicsResource<glm::vec3> invisible_material_;
 };
