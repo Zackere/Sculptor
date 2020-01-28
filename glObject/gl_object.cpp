@@ -1,7 +1,7 @@
 #include "gl_object.hpp"
 
-#include <algorithm>
 #include <execution>
+#include <numeric>
 #include <utility>
 
 #include "../matrixApplier/matrix_applier_base.hpp"

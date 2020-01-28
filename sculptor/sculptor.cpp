@@ -52,7 +52,7 @@ int Sculptor::Main() {
   glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
   glClearColor(44.0f / 255.0f, 219.0f / 255.0f, 216.0f / 255.0f, 0.0f);
   std::string base = "../Sculptor2/Sculptor/";
-  constexpr int ncubes = 400;
+  constexpr int ncubes = 10;
   std::unique_ptr<glObject> cube = std::make_unique<glObject>(
       std::make_unique<ObjProvider>(base + "model/cube.obj"),
       std::make_unique<ShaderProvider>(
