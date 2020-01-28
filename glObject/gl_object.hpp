@@ -33,6 +33,7 @@ class glObject {
     return model_parameters_.verticies->GetSize();
   }
   auto GetAvgPosition() const { return average_pos_; }
+  auto* GetVertices() { return model_parameters_.verticies.get(); }
 
  private:
   struct {

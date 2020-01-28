@@ -21,6 +21,8 @@ class Drill {
   void MoveForward();
   void MoveBackward();
 
+  glObject& GetObject() { return *model_; }
+
  private:
   std::unique_ptr<glObject> model_;
   glm::vec3 forward_ = {};

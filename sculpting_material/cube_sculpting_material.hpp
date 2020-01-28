@@ -11,22 +11,27 @@ namespace Sculptor {
 class MatrixApplierBase;
 class glObject;
 class glInstancedObject;
+class KdTree;
 
 class CubeSculptingMaterial {
  public:
   CubeSculptingMaterial(int ncubes_per_side,
                         std::unique_ptr<glObject> reference_model,
-                        std::unique_ptr<MatrixApplierBase> matrix_applier);
+                        std::unique_ptr<MatrixApplierBase> matrix_applier,
+                        std::unique_ptr<KdTree> kd_tree);
   ~CubeSculptingMaterial();
 
   void Render(glm::mat4 const& vp);
   void RotateLeft();
   void RotateRight();
 
+  void Collide(glObject& object);
+
  private:
   HollowCubeGenerator hollow_cube_generator_;
   CubeGenerator cube_generator_;
   std::unique_ptr<glInstancedObject> visible_material_;
   CudaGraphicsResource<glm::vec3> invisible_material_;
+  std::unique_ptr<KdTree> kd_tree_;
 };
 }  // namespace Sculptor

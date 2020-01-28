@@ -23,7 +23,11 @@ class glInstancedObject {
 
   void Render(glm::mat4 const& vp) const;
   void Transform(glm::mat4 const& m);
+
   int GetNumberOfInstances() const { return x_positions_buffer_.GetSize(); }
+  CudaGraphicsResource<float>& GetVecticesX() { return x_positions_buffer_; }
+  CudaGraphicsResource<float>& GetVecticesY() { return y_positions_buffer_; }
+  CudaGraphicsResource<float>& GetVecticesZ() { return z_positions_buffer_; }
 
  private:
   std::unique_ptr<glObject> reference_model_;

@@ -11,6 +11,7 @@
 
 #include "../drill/drill.hpp"
 #include "../glObject/gl_object.hpp"
+#include "../kdtree/kdtree_gpu.hpp"
 #include "../matrixApplier/matrix_applier.hpp"
 #include "../modelProvider/obj_provider.hpp"
 #include "../sculpting_material/cube_sculpting_material.hpp"
@@ -28,7 +29,7 @@ Sculptor::~Sculptor() {
 
 int Sculptor::Main() {
   GLFWwindow* window;
-  constexpr auto wWidth = 1280.f, wHeight = 960.f;
+  constexpr auto wWidth = 2 * 1280.f, wHeight = 2 * 960.f;
   window = glfwCreateWindow(static_cast<int>(wWidth), static_cast<int>(wHeight),
                             "Sculptor", nullptr, nullptr);
   if (!window)
@@ -63,7 +64,8 @@ int Sculptor::Main() {
       glm::mat4(1.f), glm::vec3(1.f / ncubes, 1.f / ncubes, 1.f / ncubes)));
 
   CubeSculptingMaterial material(ncubes, std::move(cube),
-                                 std::make_unique<MatrixApplier>());
+                                 std::make_unique<MatrixApplier>(),
+                                 std::make_unique<KdTreeGPU>());
 
   std::unique_ptr<glObject> drill_model = std::make_unique<glObject>(
       std::make_unique<ObjProvider>(base + "model/drill.obj"),
@@ -96,6 +98,7 @@ int Sculptor::Main() {
     glfwSwapBuffers(window);
 
     drill.Spin();
+    material.Collide(drill.GetObject());
 
     glfwPollEvents();
   } while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS &&

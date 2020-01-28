@@ -5,6 +5,7 @@
 
 #include "../glInstancedObject/gl_instanced_object.hpp"
 #include "../glObject/gl_object.hpp"
+#include "../kdtree/kdtree.hpp"
 #include "../matrixApplier/matrix_applier.hpp"
 #include "../shapeGenerator/shape_generator_base.hpp"
 
@@ -12,7 +13,8 @@ namespace Sculptor {
 CubeSculptingMaterial::CubeSculptingMaterial(
     int ncubes_per_side,
     std::unique_ptr<glObject> reference_model,
-    std::unique_ptr<MatrixApplierBase> matrix_applier)
+    std::unique_ptr<MatrixApplierBase> matrix_applier,
+    std::unique_ptr<KdTree> kd_tree)
     : hollow_cube_generator_(2.f / ncubes_per_side),
       cube_generator_(
           std::make_unique<HollowCubeGenerator>(2.f / ncubes_per_side)),
@@ -24,12 +26,13 @@ CubeSculptingMaterial::CubeSculptingMaterial(
           std::make_unique<HollowCubeGenerator>(2.f / ncubes_per_side),
           std::move(matrix_applier))),
       invisible_material_(
-          cube_generator_.GetNumberOfOutputs(ncubes_per_side - 2)) {
+          cube_generator_.GetNumberOfOutputs(ncubes_per_side - 2)),
+      kd_tree_(std::move(kd_tree)) {
   auto offsets = cube_generator_.Generate(ncubes_per_side);
   invisible_material_.SetData(offsets.data(), offsets.size());
 }
 
-CubeSculptingMaterial::~CubeSculptingMaterial() = default;
+CubeSculptingMaterial::~CubeSculptingMaterial() {}
 
 void CubeSculptingMaterial::Render(glm::mat4 const& vp) {
   visible_material_->Render(vp);
@@ -43,5 +46,11 @@ void CubeSculptingMaterial::RotateLeft() {
 void CubeSculptingMaterial::RotateRight() {
   visible_material_->Transform(
       glm::rotate(glm::mat4(1.f), 0.1f, glm::vec3(0, 1, 0)));
+}
+
+void CubeSculptingMaterial::Collide(glObject&) {
+  kd_tree_->Construct(visible_material_->GetVecticesX(),
+                      visible_material_->GetVecticesY(),
+                      visible_material_->GetVecticesZ());
 }
 }  // namespace Sculptor

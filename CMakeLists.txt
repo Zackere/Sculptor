@@ -11,6 +11,7 @@ file(GLOB source_files
     ${CMAKE_SOURCE_DIR}/*/*/*.cpp
     ${CMAKE_SOURCE_DIR}/*/*/*.cu
 )
+
 add_executable(${PROJECT_NAME} main.cpp ${source_files})
 add_definitions(-D__INTELLISENSE__)
 
