@@ -14,11 +14,10 @@ class KdTreeGPU : public KdTree {
                  CudaGraphicsResource<float>& y,
                  CudaGraphicsResource<float>& z) override;
 
-  void RemoveNearest(
-      CudaGraphicsResource<float>& kd_x,
-      CudaGraphicsResource<float>& kd_y,
-      CudaGraphicsResource<float>& kd_z,
-      float threshold,
-      CudaGraphicsResource<glm::vec3> const& query_points) override;
+  void RemoveNearest(CudaGraphicsResource<float>& kd_x,
+                     CudaGraphicsResource<float>& kd_y,
+                     CudaGraphicsResource<float>& kd_z,
+                     CudaGraphicsResource<glm::vec3>& query_points,
+                     float threshold) override;
 };
 }  // namespace Sculptor

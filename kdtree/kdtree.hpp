@@ -13,11 +13,10 @@ class KdTree {
                          CudaGraphicsResource<float>& y,
                          CudaGraphicsResource<float>& z) = 0;
 
-  virtual void RemoveNearest(
-      CudaGraphicsResource<float>& kd_x,
-      CudaGraphicsResource<float>& kd_y,
-      CudaGraphicsResource<float>& kd_z,
-      float threshold,
-      CudaGraphicsResource<glm::vec3> const& query_points) = 0;
+  virtual void RemoveNearest(CudaGraphicsResource<float>& kd_x,
+                             CudaGraphicsResource<float>& kd_y,
+                             CudaGraphicsResource<float>& kd_z,
+                             CudaGraphicsResource<glm::vec3>& query_points,
+                             float threshold) = 0;
 };
 }  // namespace Sculptor

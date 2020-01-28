@@ -1,4 +1,3 @@
-// clang-format off
 #include "matrix_applier.hpp"
 // clang-format on
 
@@ -43,7 +42,8 @@ __global__ void ApplyKernel(float* vectors, int size) {
   size += off;
   __syncthreads();
   // Handle leftover vectors
-  if (index < size) s_data[threadIdx.x] = vectors[index];
+  if (index < size)
+    s_data[threadIdx.x] = vectors[index];
   if (index + kThreads < size)
     s_data[threadIdx.x + kThreads] = vectors[index + kThreads];
   if (index + 2 * kThreads < size)
@@ -58,7 +58,8 @@ __global__ void ApplyKernel(float* vectors, int size) {
              v.x * c_matrix[0][2] + v.y * c_matrix[1][2] +
                  v.z * c_matrix[2][2] + c_matrix[3][2]};
   __syncthreads();
-  if (index < size) vectors[index] = s_data[threadIdx.x];
+  if (index < size)
+    vectors[index] = s_data[threadIdx.x];
   if (index + kThreads < size)
     vectors[index + kThreads] = s_data[threadIdx.x + kThreads];
   if (index + 2 * kThreads < size)
@@ -80,7 +81,8 @@ __global__ void ApplyKernel(float* x, float* y, float* z, int size) {
   }
 }
 }  // namespace
-void MatrixApplier::Apply(cudaGraphicsResource* vectors, int nvectors,
+void MatrixApplier::Apply(cudaGraphicsResource* vectors,
+                          int nvectors,
                           glm::mat4 const& matrix) {
   cudaGraphicsMapResources(1, &vectors);
   float* dvectors = nullptr;
@@ -94,8 +96,10 @@ void MatrixApplier::Apply(cudaGraphicsResource* vectors, int nvectors,
 
   cudaGraphicsUnmapResources(1, &vectors);
 }
-void MatrixApplier::Apply(cudaGraphicsResource* x, cudaGraphicsResource* y,
-                          cudaGraphicsResource* z, int nvectors,
+void MatrixApplier::Apply(cudaGraphicsResource* x,
+                          cudaGraphicsResource* y,
+                          cudaGraphicsResource* z,
+                          int nvectors,
                           glm::mat4 const& matrix) {
   cudaGraphicsMapResources(1, &x);
   cudaGraphicsMapResources(1, &y);

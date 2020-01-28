@@ -28,6 +28,7 @@ class CubeSculptingMaterial {
   void Collide(glObject& object);
 
  private:
+  float side_len_;
   HollowCubeGenerator hollow_cube_generator_;
   CubeGenerator cube_generator_;
   std::unique_ptr<glInstancedObject> visible_material_;
