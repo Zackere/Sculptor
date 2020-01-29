@@ -45,7 +45,7 @@ int Sculptor::Main() {
   glCullFace(GL_BACK);
 
   glm::mat4 projection = glm::perspective(
-      glm::radians(45.0f), static_cast<float>(wWidth) / wHeight, 0.1f, 100.0f);
+      glm::radians(45.0f), static_cast<float>(wWidth) / wHeight, 0.1f, 10.0f);
   glm::mat4 view =
       glm::lookAt(glm::vec3(3, 1.5, 3), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
   auto vp = projection * view;
@@ -74,7 +74,7 @@ int Sculptor::Main() {
                                        base + "shader/drill/drill_shader.fs"),
       std::make_unique<MatrixApplier>(), nullptr);
   drill_model->Transform(
-      glm::scale(glm::mat4(1.f), glm::vec3(0.03, 0.03, 0.03)));
+      glm::scale(glm::mat4(1.f), glm::vec3(0.02, 0.02, 0.02)));
   Drill drill(std::move(drill_model));
 
   do {
