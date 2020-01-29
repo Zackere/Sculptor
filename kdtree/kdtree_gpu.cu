@@ -7,15 +7,14 @@
 #include <cuda_runtime_api.h>
 #include <device_launch_parameters.h>
 #include <thrust/device_vector.h>
+#include <thrust/functional.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/sort.h>
-
-#include <future>
 
 namespace Sculptor {
 namespace {
 constexpr int kThreads = 128;
-constexpr int kBlocks = 32;
+constexpr int kBlocks = 16;
 constexpr int kStackDepth = 32;
 constexpr float kEps = 0.001f;
 
@@ -52,60 +51,56 @@ __host__ __device__ __forceinline__ float dist2(float3 v,
 }
 
 struct alignas(int) StackEntry {
-  int begin;
-  int end;
+  int begin = 0;
+  int end = 0;
   struct alignas(char) {
-    char level;
-    char visited_branch;  // left: -1, none: 0, right: 1
+    char level = 0;
+    char visited_branch = 0;  // left: -1, none: 0, right: 1
   } misc;
 };
 
-__global__ void FindToRemoveKernel(float const* kd_x,
-                                   float const* kd_y,
-                                   float const* kd_z,
+__global__ void FindToRemoveKernel(float const* const kd_x,
+                                   float const* const kd_y,
+                                   float const* const kd_z,
                                    int const kd_size,
-                                   float const* query_points,
-                                   int const number_of_query_points,
-                                   int* to_remove,
-                                   int* to_remove_top,
+                                   float const* const query_points,
+                                   int* const should_stay,
                                    float const threshold) {
   __shared__ float s_query_pts[3 * kThreads];
   __shared__ StackEntry stack[kStackDepth];
   __shared__ int stack_top;
-  __shared__ int go_left, go_right;
+  __shared__ int go_left_votes;
 
-  // retrieve query point
-  int tid = 3 * blockIdx.x * blockDim.x + threadIdx.x;
-  s_query_pts[threadIdx.x] = query_points[tid];
-  s_query_pts[threadIdx.x + kThreads] = query_points[tid + kThreads];
-  s_query_pts[threadIdx.x + 2 * kThreads] = query_points[tid + 2 * kThreads];
-  __syncthreads();
-  float3 query_point = reinterpret_cast<float3*>(s_query_pts)[threadIdx.x];
-
-  // pre-procedure tasks
-  tid = blockIdx.x * blockDim.x + threadIdx.x;
-  if (threadIdx.x == 0)
-    stack[stack_top = 0] = {0, kd_size, {0, 0}};
+  {  // retrieve query point
+    int tid = 3 * blockIdx.x * blockDim.x + threadIdx.x;
+    s_query_pts[threadIdx.x] = query_points[tid];
+    s_query_pts[threadIdx.x + kThreads] = query_points[tid + kThreads];
+    s_query_pts[threadIdx.x + 2 * kThreads] = query_points[tid + 2 * kThreads];
+    __syncthreads();
+  }
+  float3 const query_point =
+      reinterpret_cast<float3*>(s_query_pts)[threadIdx.x];
   int cur_nearest_point = kd_size / 2;
   float cur_best_dist = dist2(query_point, kd_x[cur_nearest_point],
                               kd_y[cur_nearest_point], kd_z[cur_nearest_point]);
-PROC_START : {  // procedure find (begin, end, level)
+  if (threadIdx.x == 0)
+    stack[stack_top = 0] = {0, kd_size, {0, 0}};
+
+FIND_PROC : {
   __syncthreads();
   if (stack[stack_top].end <= stack[stack_top].begin)
-    goto RETURN;  // no node to investigate
-  // calculate root node
-  auto mid = (stack[stack_top].end + stack[stack_top].begin) / 2;
+    goto RETURN;
+  auto mid = (stack[stack_top].begin + stack[stack_top].end) / 2;
   auto dist_to_mid = dist2(query_point, kd_x[mid], kd_y[mid], kd_z[mid]);
-  // update current best node if necessary
   if (dist_to_mid < cur_best_dist) {
     cur_best_dist = dist_to_mid;
-    cur_best_dist = mid;
+    cur_nearest_point = mid;
   }
   if (stack[stack_top].begin + 1 == stack[stack_top].end)
-    goto RETURN;  // no subtrees to visit
-
+    goto RETURN;
   auto diff = 0.f;
   switch (stack[stack_top].misc.level) {
+    default:
     case 0:
       diff = query_point.x - kd_x[mid];
       break;
@@ -116,89 +111,73 @@ PROC_START : {  // procedure find (begin, end, level)
       diff = query_point.z - kd_z[mid];
       break;
   }
-
   switch (stack[stack_top].misc.visited_branch) {
+    default:
     case 0:
       break;
-    case -1:
-      // vote whether we need to visit right subtree:
-      if (__syncthreads_or(diff <= -kEps && -diff < cur_best_dist)) {
-        // replace current stack frame as we wont be going back to this node
-        if (threadIdx.x) {
-          stack[stack_top].begin = mid + 1;
-          stack[stack_top].misc.level = stack[stack_top].misc.level == 2
-                                            ? 0
-                                            : (stack[stack_top].misc.level + 1);
-          // mark we havent visited any sub tree of right subtree
-          stack[stack_top].misc.visited_branch = 0;
-        }
-        goto PROC_START;
-      } else {
-        // proceed to removing current stack frame as we dont need to visit
-        // right subtree
-        goto RETURN;
-      }
     case 1:
-      // vote whether we need to visit left subtree
-      if (__syncthreads_or(diff >= kEps && diff < cur_best_dist)) {
-        // replace current stack frame as we wont be going back to this node
+      if (__syncthreads_or(diff < kEps && -diff < cur_best_dist)) {
         if (threadIdx.x == 0) {
           stack[stack_top].end = mid;
           stack[stack_top].misc.level = stack[stack_top].misc.level == 2
                                             ? 0
                                             : (stack[stack_top].misc.level + 1);
-          // mark we havent visited any sub tree of right subtree
           stack[stack_top].misc.visited_branch = 0;
         }
-        goto PROC_START;
-      } else {
-        goto RETURN;
+        goto FIND_PROC;
       }
+      goto RETURN;
+    case -1:
+      if (__syncthreads_or(diff > -kEps && diff < cur_best_dist)) {
+        if (threadIdx.x == 0) {
+          stack[stack_top].begin = mid + 1;
+          stack[stack_top].misc.level = stack[stack_top].misc.level == 2
+                                            ? 0
+                                            : (stack[stack_top].misc.level + 1);
+          stack[stack_top].misc.visited_branch = 0;
+        }
+        goto FIND_PROC;
+      }
+      goto RETURN;
   }
-  // here we havent visited any of current node subtrees. threads will vote
-  // which subtree they wanna visit first. whichever wins will be visited.
+
   if (threadIdx.x == 0)
-    go_left = go_right = 0;
+    go_left_votes = 0;
   __syncthreads();
-  // voting time
-  atomicAdd(&go_left, diff < kEps);
-  atomicAdd(&go_right, diff > -kEps);
+  atomicAdd(&go_left_votes, diff < 0);
   __syncthreads();
   if (threadIdx.x == 0) {
-    if (go_left > go_right) {
-      // record this choice in current stack frame
-      stack[stack_top].misc.visited_branch = -1;
-      // create next stack frame
-      ++stack_top;
-      stack[stack_top].begin = stack[stack_top - 1].begin;
+    ++stack_top;
+    stack[stack_top] = stack[stack_top - 1];
+    if (go_left_votes > kThreads / 2) {
+      stack[stack_top - 1].misc.visited_branch = -1;
       stack[stack_top].end = mid;
     } else {
-      // record this choice in current stack frame
-      stack[stack_top].misc.visited_branch = 1;
-      // create next stack frame
-      ++stack_top;
-      stack[stack_top].begin = stack[stack_top - 1].begin;
-      stack[stack_top].end = mid;
+      stack[stack_top - 1].misc.visited_branch = 1;
+      stack[stack_top].begin = mid + 1;
     }
     stack[stack_top].misc.level = stack[stack_top - 1].misc.level == 2
                                       ? 0
                                       : (stack[stack_top - 1].misc.level + 1);
+    stack[stack_top].misc.visited_branch = 0;
   }
-  goto PROC_START;
+  goto FIND_PROC;
 }
 RETURN : {
-  if (stack_top == 0) {
-    if (cur_best_dist < threshold) {
-      auto i = atomicAdd(to_remove_top, 1);
-      to_remove[i] = cur_nearest_point;
-    }
-    return;
+  if (stack_top > 0) {
+    if (threadIdx.x == 0)
+      --stack_top;
+    goto FIND_PROC;
   }
-  if (threadIdx.x == 0)
-    --stack_top;
-  goto PROC_START;
 }
+  if (cur_best_dist < threshold)
+    should_stay[cur_nearest_point] = 0;
 }
+
+struct EqualToZero {
+  __host__ __device__ bool operator()(const int x) { return x == 0; }
+};
+
 }  // namespace
 
 void KdTreeGPU::Construct(CudaGraphicsResource<float>& x,
@@ -264,14 +243,35 @@ void KdTreeGPU::RemoveNearest(CudaGraphicsResource<float>& x,
   cudaGraphicsResourceGetMappedPointer(reinterpret_cast<void**>(&dq),
                                        &num_bytes, query_res);
 
-  int to_remove_size = 0;
-  thrust::device_vector<int> nearest_neighbour_index(query_points.GetSize(),
-                                                     -1);
-  FindToRemoveKernel<<<kBlocks, kThreads>>>(
-      dx, dy, dz, x.GetSize(), dq, query_points.GetSize(),
-      thrust::raw_pointer_cast(nearest_neighbour_index.data()), &to_remove_size,
-      threshold);
+  int* dshould_stay;
+  cudaMalloc(reinterpret_cast<void**>(&dshould_stay),
+             sizeof(int) * x.GetSize());
+  thrust::fill(thrust::device_ptr<int>(dshould_stay),
+               thrust::device_ptr<int>(dshould_stay) + x.GetSize(), 1);
+
+  int iteration = 0;
+  int max = query_points.GetSize() - kThreads * kBlocks;
+  for (; iteration < max; iteration += kThreads * kBlocks)
+    FindToRemoveKernel<<<kBlocks, kThreads>>>(
+        dx, dy, dz, x.GetSize(), dq + 3 * iteration, dshould_stay, threshold);
+  FindToRemoveKernel<<<(query_points.GetSize() - iteration) / kThreads,
+                       kThreads>>>(dx, dy, dz, x.GetSize(), dq + 3 * iteration,
+                                   dshould_stay, threshold);
   cudaDeviceSynchronize();
+  printf("%s\n", cudaGetErrorString(cudaGetLastError()));
+  thrust::device_ptr<int> should_stay_dev_ptr(dshould_stay);
+  auto xyz = thrust::make_zip_iterator(thrust::make_tuple(
+      thrust::device_ptr<float>(dx), thrust::device_ptr<float>(dy),
+      thrust::device_ptr<float>(dz)));
+  auto removed = xyz + x.GetSize() -
+                 thrust::remove_if(xyz, xyz + x.GetSize(), should_stay_dev_ptr,
+                                   EqualToZero());
+  if (removed) {
+    x.PopBack(removed);
+    y.PopBack(removed);
+    z.PopBack(removed);
+  }
+  cudaFree(dshould_stay);
 
   cudaGraphicsUnmapResources(1, &query_res);
   cudaGraphicsUnmapResources(1, &z_res);

@@ -53,7 +53,7 @@ int Sculptor::Main() {
   glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
   glClearColor(44.0f / 255.0f, 219.0f / 255.0f, 216.0f / 255.0f, 0.0f);
   std::string base = "../Sculptor2/Sculptor/";
-  constexpr int ncubes = 100;
+  constexpr int ncubes = 200;
   std::unique_ptr<glObject> cube = std::make_unique<glObject>(
       std::make_unique<ObjProvider>(base + "model/cube.obj"),
       std::make_unique<ShaderProvider>(
@@ -91,16 +91,14 @@ int Sculptor::Main() {
     else if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
       drill.MoveDown();
 
+    drill.Spin();
+    material.Collide(drill.GetObject());
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     material.Render(vp);
     drill.Render(vp);
-
     glfwSwapBuffers(window);
-
-    drill.Spin();
-    material.Collide(drill.GetObject());
-
     glfwPollEvents();
   } while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS &&
            glfwWindowShouldClose(window) == 0);
