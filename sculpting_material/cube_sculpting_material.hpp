@@ -18,7 +18,8 @@ class CubeSculptingMaterial {
   CubeSculptingMaterial(int ncubes_per_side,
                         std::unique_ptr<glObject> reference_model,
                         std::unique_ptr<MatrixApplierBase> matrix_applier,
-                        std::unique_ptr<KdTree> kd_tree);
+                        std::unique_ptr<KdTree> kd_tree_constructor,
+                        std::unique_ptr<KdTree> nearest_neighbour_finder);
   ~CubeSculptingMaterial();
 
   void Render(glm::mat4 const& vp);
@@ -33,6 +34,7 @@ class CubeSculptingMaterial {
   CubeGenerator cube_generator_;
   std::unique_ptr<glInstancedObject> visible_material_;
   CudaGraphicsResource<glm::vec3> invisible_material_;
-  std::unique_ptr<KdTree> kd_tree_;
+  std::unique_ptr<KdTree> kd_tree_constructor_;
+  std::unique_ptr<KdTree> nearest_neighbour_finder_;
 };
 }  // namespace Sculptor

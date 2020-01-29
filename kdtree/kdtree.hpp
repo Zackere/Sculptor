@@ -17,6 +17,7 @@ class KdTree {
                              CudaGraphicsResource<float>& kd_y,
                              CudaGraphicsResource<float>& kd_z,
                              CudaGraphicsResource<glm::vec3>& query_points,
-                             float threshold) = 0;
+                             float threshold,
+                             bool construct) = 0;
 };
 }  // namespace Sculptor

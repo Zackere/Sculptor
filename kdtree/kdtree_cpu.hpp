@@ -19,23 +19,22 @@ class KdTreeCPU : public KdTree {
                      CudaGraphicsResource<float>& kd_y,
                      CudaGraphicsResource<float>& kd_z,
                      CudaGraphicsResource<glm::vec3>& query_points,
-                     float threshold) override;
+                     float threshold,
+                     bool construct) override;
 
  private:
-  struct Zip {
-    float *x, *y, *z;
-  };
   glm::vec3 query_point_ = {0, 0, 0};
-  std::vector<Zip>::iterator closest_node_ = std::vector<Zip>::iterator();
-  float best_distance_squared_ = 0.f;
+  std::vector<glm::vec3>::iterator closest_node_ =
+      std::vector<glm::vec3>::iterator();
+  float best_distance_ = 0.f;
 
-  float DistFromQuery(Zip const& zip) {
-    return (*zip.x - query_point_.x) * (*zip.x - query_point_.x) +
-           (*zip.y - query_point_.y) * (*zip.y - query_point_.y) +
-           (*zip.z - query_point_.z) * (*zip.z - query_point_.z);
+  float DistFromQuery(glm::vec3 const& v) {
+    return std::max(std::abs(v.x - query_point_.x),
+                    std::max(std::abs(v.y - query_point_.y),
+                             std::abs(v.z - query_point_.z)));
   }
-  void FindNearestRecursive(std::vector<Zip>::iterator begin,
-                            std::vector<Zip>::iterator end,
+  void FindNearestRecursive(std::vector<glm::vec3>::iterator begin,
+                            std::vector<glm::vec3>::iterator end,
                             int level);
 };
 }  // namespace Sculptor

@@ -18,6 +18,7 @@ class KdTreeGPU : public KdTree {
                      CudaGraphicsResource<float>& kd_y,
                      CudaGraphicsResource<float>& kd_z,
                      CudaGraphicsResource<glm::vec3>& query_points,
-                     float threshold) override;
+                     float threshold,
+                     bool construct) override;
 };
 }  // namespace Sculptor

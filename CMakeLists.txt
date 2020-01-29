@@ -38,9 +38,9 @@ target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES} ${GLEW_LIBRARIES} glfw
 
 # Compile options
 set_property(TARGET ${PROJECT_NAME} PROPERTY CUDA_STANDARD 14)
-set(CUDA_NVCC_FLAGS "--maxrregcount 32 -lineinfo")
+set(CUDA_NVCC_FLAGS "--maxrregcount 32 -O2")
 set(CMAKE_CXX_FLAGS
-    "-std=c++17 -O0 -g         \
+    "-std=c++17 -O2            \
     -Weffc++                   \
     -Wredundant-decls          \
     -Wall                      \

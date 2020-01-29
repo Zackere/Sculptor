@@ -7,6 +7,7 @@
 #include <execution>
 #include <functional>
 #include <set>
+#include <utility>
 
 namespace Sculptor {
 namespace {
@@ -16,25 +17,12 @@ template <typename RandomIt>
 void ConstructRecursive(RandomIt begin, RandomIt end, int level) {
   if (end <= begin)
     return;
-  switch (level) {
-    default:
-      throw 0;
-    case 0:
-      std::sort(std::execution::par, begin, end,
-                [](auto const& v1, auto const& v2) { return v1.x < v2.x; });
-      level = 1;
-      break;
-    case 1:
-      std::sort(std::execution::par, begin, end,
-                [](auto const& v1, auto const& v2) { return v1.y < v2.y; });
-      level = 2;
-      break;
-    case 2:
-      std::sort(std::execution::par, begin, end,
-                [](auto const& v1, auto const& v2) { return v1.z < v2.z; });
-      level = 0;
-      break;
-  }
+  std::sort(std::execution::par, begin, end,
+            [level](auto const& v1, auto const& v2) {
+              return reinterpret_cast<float const*>(&v1)[level] <
+                     reinterpret_cast<float const*>(&v2)[level];
+            });
+  level = level == 2 ? 0 : (level + 1);
   auto mid = begin + (end - begin) / 2;
   ConstructRecursive(begin, mid, level);
   ConstructRecursive(mid + 1, end, level);
@@ -93,7 +81,8 @@ void KdTreeCPU::RemoveNearest(CudaGraphicsResource<float>& x,
                               CudaGraphicsResource<float>& y,
                               CudaGraphicsResource<float>& z,
                               CudaGraphicsResource<glm::vec3>& query_points,
-                              float threshold) {
+                              float threshold,
+                              bool construct) {
   if (!x.GetSize())
     return;
 
@@ -128,24 +117,29 @@ void KdTreeCPU::RemoveNearest(CudaGraphicsResource<float>& x,
   cudaMemcpy(queries.data(), dq, query_points.GetSize() * sizeof(glm::vec3),
              cudaMemcpyDeviceToHost);
 
-  std::vector<Zip> kd(x.GetSize());
-  for (int i = 0; i < x.GetSize(); ++i)
-    kd[i] = {kd_x.data() + i, kd_y.data() + i, kd_z.data() + i};
-  std::set<std::vector<Zip>::iterator, std::greater<>> to_be_removed;
-  auto const threshold_squared = threshold * threshold;
+  std::vector<glm::vec3> kd(x.GetSize());
+  for (auto i = 0u; i < kd.size(); ++i)
+    kd[i] = {kd_x[i], kd_y[i], kd_z[i]};
+  if (construct)
+    ConstructRecursive(kd.begin(), kd.end(), 0);
+  std::set<std::vector<glm::vec3>::iterator, std::greater<>> to_be_removed;
   for (auto const& v : queries) {
     closest_node_ = kd.begin() + (kd.end() - kd.begin()) / 2;
     query_point_ = v;
-    best_distance_squared_ = DistFromQuery(*closest_node_);
+    best_distance_ = DistFromQuery(*closest_node_);
     FindNearestRecursive(kd.begin(), kd.end(), 0);
-    if (best_distance_squared_ < threshold_squared)
+    if (best_distance_ < threshold)
       to_be_removed.insert(closest_node_);
   }
   for (auto it : to_be_removed) {
-    *it->x = *kd.back().x;
-    *it->y = *kd.back().y;
-    *it->z = *kd.back().z;
+    using std::swap;
+    swap(*it, kd.back());
     kd.pop_back();
+  }
+  for (auto i = 0u; i < kd.size(); ++i) {
+    kd_x[i] = kd[i].x;
+    kd_y[i] = kd[i].y;
+    kd_z[i] = kd[i].z;
   }
 
   x.SetData(kd_x.data(), kd.size());
@@ -158,73 +152,32 @@ void KdTreeCPU::RemoveNearest(CudaGraphicsResource<float>& x,
   cudaGraphicsUnmapResources(1, &x_res);
 }
 
-void KdTreeCPU::FindNearestRecursive(std::vector<Zip>::iterator begin,
-                                     std::vector<Zip>::iterator end,
+void KdTreeCPU::FindNearestRecursive(std::vector<glm::vec3>::iterator begin,
+                                     std::vector<glm::vec3>::iterator end,
                                      int level) {
   if (end <= begin)
     return;
   auto mid = begin + (end - begin) / 2;
-  float dist_to_mid = DistFromQuery(*mid);
-  if (dist_to_mid < best_distance_squared_) {
-    best_distance_squared_ = dist_to_mid;
+  if (auto dist_to_mid = DistFromQuery(*mid); dist_to_mid < best_distance_) {
+    best_distance_ = dist_to_mid;
     closest_node_ = mid;
   }
   if (begin + 1 == end)
     return;
-  switch (level) {
-    default:
-      throw 0;
-    case 0: {
-      float diff = query_point_.x - *mid->x;
-      if (diff > -kEps) {
-        FindNearestRecursive(mid + 1, end, 1);
-        if (diff < best_distance_squared_) {
-          FindNearestRecursive(begin, mid, 1);
-          break;
-        }
-      }
-      if (diff < kEps) {
-        FindNearestRecursive(begin, mid, 1);
-        if (diff <= -kEps && -diff < best_distance_squared_) {
-          FindNearestRecursive(mid + 1, end, 1);
-          break;
-        }
-      }
-    } break;
-    case 1: {
-      float diff = query_point_.y - *mid->y;
-      if (diff > -kEps) {
-        FindNearestRecursive(mid + 1, end, 2);
-        if (diff < best_distance_squared_) {
-          FindNearestRecursive(begin, mid, 2);
-          break;
-        }
-      }
-      if (diff < kEps) {
-        FindNearestRecursive(begin, mid, 2);
-        if (diff <= -kEps && -diff < best_distance_squared_) {
-          FindNearestRecursive(mid + 1, end, 2);
-          break;
-        }
-      }
-    } break;
-    case 2: {
-      float diff = query_point_.z - *mid->z;
-      if (diff > -kEps) {
-        FindNearestRecursive(mid + 1, end, 0);
-        if (diff < best_distance_squared_) {
-          FindNearestRecursive(begin, mid, 0);
-          break;
-        }
-      }
-      if (diff < kEps) {
-        FindNearestRecursive(begin, mid, 0);
-        if (diff <= -kEps && -diff < best_distance_squared_) {
-          FindNearestRecursive(mid + 1, end, 0);
-          break;
-        }
-      }
-    } break;
+  auto diff = reinterpret_cast<float*>(&query_point_)[level] -
+              reinterpret_cast<float*>(&(*mid))[level];
+  level = level == 2 ? 0 : (level + 1);
+  if (diff > -kEps) {
+    FindNearestRecursive(mid + 1, end, level);
+    if (diff < best_distance_) {
+      FindNearestRecursive(begin, mid, level);
+      return;
+    }
+  }
+  if (diff < kEps) {
+    FindNearestRecursive(begin, mid, level);
+    if (diff <= -kEps && -diff < best_distance_)
+      FindNearestRecursive(mid + 1, end, level);
   }
 }
 }  // namespace Sculptor

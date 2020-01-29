@@ -12,6 +12,7 @@
 #include "../drill/drill.hpp"
 #include "../glObject/gl_object.hpp"
 #include "../kdtree/kdtree_cpu.hpp"
+#include "../kdtree/kdtree_gpu.hpp"
 #include "../matrixApplier/matrix_applier.hpp"
 #include "../modelProvider/obj_provider.hpp"
 #include "../sculpting_material/cube_sculpting_material.hpp"
@@ -52,7 +53,7 @@ int Sculptor::Main() {
   glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
   glClearColor(44.0f / 255.0f, 219.0f / 255.0f, 216.0f / 255.0f, 0.0f);
   std::string base = "../Sculptor2/Sculptor/";
-  constexpr int ncubes = 50;
+  constexpr int ncubes = 100;
   std::unique_ptr<glObject> cube = std::make_unique<glObject>(
       std::make_unique<ObjProvider>(base + "model/cube.obj"),
       std::make_unique<ShaderProvider>(
@@ -63,9 +64,9 @@ int Sculptor::Main() {
   cube->Transform(glm::scale(
       glm::mat4(1.f), glm::vec3(1.f / ncubes, 1.f / ncubes, 1.f / ncubes)));
 
-  CubeSculptingMaterial material(ncubes, std::move(cube),
-                                 std::make_unique<MatrixApplier>(),
-                                 std::make_unique<KdTreeCPU>());
+  CubeSculptingMaterial material(
+      ncubes, std::move(cube), std::make_unique<MatrixApplier>(),
+      std::make_unique<KdTreeCPU>(), std::make_unique<KdTreeGPU>());
 
   std::unique_ptr<glObject> drill_model = std::make_unique<glObject>(
       std::make_unique<ObjProvider>(base + "model/drill.obj"),

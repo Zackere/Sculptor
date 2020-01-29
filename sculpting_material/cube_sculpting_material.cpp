@@ -10,11 +10,15 @@
 #include "../shapeGenerator/shape_generator_base.hpp"
 
 namespace Sculptor {
+namespace {
+constexpr float kSmallAngle = 0.01f;
+}
 CubeSculptingMaterial::CubeSculptingMaterial(
     int ncubes_per_side,
     std::unique_ptr<glObject> reference_model,
     std::unique_ptr<MatrixApplierBase> matrix_applier,
-    std::unique_ptr<KdTree> kd_tree)
+    std::unique_ptr<KdTree> kd_tree_constructor,
+    std::unique_ptr<KdTree> nearest_neighbour_finder)
     : side_len_(2.f / ncubes_per_side),
       hollow_cube_generator_(side_len_),
       cube_generator_(std::make_unique<HollowCubeGenerator>(side_len_)),
@@ -27,7 +31,8 @@ CubeSculptingMaterial::CubeSculptingMaterial(
           std::move(matrix_applier))),
       invisible_material_(
           cube_generator_.GetNumberOfOutputs(ncubes_per_side - 2)),
-      kd_tree_(std::move(kd_tree)) {
+      kd_tree_constructor_(std::move(kd_tree_constructor)),
+      nearest_neighbour_finder_(std::move(nearest_neighbour_finder)) {
   auto offsets = cube_generator_.Generate(ncubes_per_side);
   invisible_material_.SetData(offsets.data(), offsets.size());
 }
@@ -40,20 +45,28 @@ void CubeSculptingMaterial::Render(glm::mat4 const& vp) {
 
 void CubeSculptingMaterial::RotateLeft() {
   visible_material_->Transform(
-      glm::rotate(glm::mat4(1.f), -0.1f, glm::vec3(0, 1, 0)));
+      glm::rotate(glm::mat4(1.f), -kSmallAngle, glm::vec3(0, 1, 0)));
 }
 
 void CubeSculptingMaterial::RotateRight() {
   visible_material_->Transform(
-      glm::rotate(glm::mat4(1.f), 0.1f, glm::vec3(0, 1, 0)));
+      glm::rotate(glm::mat4(1.f), kSmallAngle, glm::vec3(0, 1, 0)));
 }
 
 void CubeSculptingMaterial::Collide(glObject& object) {
-  kd_tree_->Construct(visible_material_->GetVecticesX(),
-                      visible_material_->GetVecticesY(),
-                      visible_material_->GetVecticesZ());
-  kd_tree_->RemoveNearest(
-      visible_material_->GetVecticesX(), visible_material_->GetVecticesY(),
-      visible_material_->GetVecticesZ(), *object.GetVertices(), side_len_);
+  if (kd_tree_constructor_) {
+    kd_tree_constructor_->Construct(visible_material_->GetVecticesX(),
+                                    visible_material_->GetVecticesY(),
+                                    visible_material_->GetVecticesZ());
+    nearest_neighbour_finder_->RemoveNearest(
+        visible_material_->GetVecticesX(), visible_material_->GetVecticesY(),
+        visible_material_->GetVecticesZ(), *object.GetVertices(), side_len_ / 2,
+        false);
+  } else {
+    nearest_neighbour_finder_->RemoveNearest(
+        visible_material_->GetVecticesX(), visible_material_->GetVecticesY(),
+        visible_material_->GetVecticesZ(), *object.GetVertices(), side_len_ / 2,
+        true);
+  }
 }
 }  // namespace Sculptor
