@@ -26,6 +26,23 @@ struct ScaleFunctor {
   const int scaling_factor = 2048;
   const float descaling_factor = 1.f / scaling_factor;
 };
+struct EqualToZero {
+  __host__ __device__ bool operator()(const int x) { return x == 0; }
+};
+struct TupleToVec3 {
+  __host__ __device__ glm::vec3 operator()(
+      thrust::tuple<float, float, float> const& t) {
+    return glm::vec3{t.get<0>(), t.get<1>(), t.get<2>()};
+  }
+};
+struct alignas(int) StackEntry {
+  int begin;
+  int end;
+  struct alignas(char) {
+    char level;
+    char visited_branch;  // left: -1, none: 0, right: 1
+  } misc;
+};
 
 void ConstructRecursive(thrust::device_vector<int>& x,
                         thrust::device_vector<int>& y,
@@ -47,17 +64,8 @@ __host__ __device__ __forceinline__ float dist2(float3 v,
                                                 float x,
                                                 float y,
                                                 float z) {
-  return fmaxf(fabsf(v.x - x), fmaxf(fabsf(v.y - y), fabsf(v.z - z)));
+  return thrust::max(abs(v.x - x), thrust::max(abs(v.y - y), abs(v.z - z)));
 }
-
-struct alignas(int) StackEntry {
-  int begin = 0;
-  int end = 0;
-  struct alignas(char) {
-    char level = 0;
-    char visited_branch = 0;  // left: -1, none: 0, right: 1
-  } misc;
-};
 
 __global__ void FindToRemoveKernel(float const* const kd_x,
                                    float const* const kd_y,
@@ -74,8 +82,9 @@ __global__ void FindToRemoveKernel(float const* const kd_x,
   {  // retrieve query point
     int tid = 3 * blockIdx.x * blockDim.x + threadIdx.x;
     s_query_pts[threadIdx.x] = query_points[tid];
-    s_query_pts[threadIdx.x + kThreads] = query_points[tid + kThreads];
-    s_query_pts[threadIdx.x + 2 * kThreads] = query_points[tid + 2 * kThreads];
+    s_query_pts[threadIdx.x + blockDim.x] = query_points[tid + blockDim.x];
+    s_query_pts[threadIdx.x + 2 * blockDim.x] =
+        query_points[tid + 2 * blockDim.x];
     __syncthreads();
   }
   float3 const query_point =
@@ -114,7 +123,27 @@ FIND_PROC : {
   switch (stack[stack_top].misc.visited_branch) {
     default:
     case 0:
-      break;
+      if (threadIdx.x == 0)
+        go_left_votes = 0;
+      __syncthreads();
+      atomicAdd(&go_left_votes, diff < 0);
+      __syncthreads();
+      if (threadIdx.x == 0) {
+        ++stack_top;
+        stack[stack_top] = stack[stack_top - 1];
+        if (go_left_votes > blockDim.x / 2) {
+          stack[stack_top - 1].misc.visited_branch = -1;
+          stack[stack_top].end = mid;
+        } else {
+          stack[stack_top - 1].misc.visited_branch = 1;
+          stack[stack_top].begin = mid + 1;
+        }
+        stack[stack_top].misc.level = stack[stack_top].misc.level == 2
+                                          ? 0
+                                          : (stack[stack_top].misc.level + 1);
+        stack[stack_top].misc.visited_branch = 0;
+      }
+      goto FIND_PROC;
     case 1:
       if (__syncthreads_or(diff < kEps && -diff < cur_best_dist)) {
         if (threadIdx.x == 0) {
@@ -140,28 +169,6 @@ FIND_PROC : {
       }
       goto RETURN;
   }
-
-  if (threadIdx.x == 0)
-    go_left_votes = 0;
-  __syncthreads();
-  atomicAdd(&go_left_votes, diff < 0);
-  __syncthreads();
-  if (threadIdx.x == 0) {
-    ++stack_top;
-    stack[stack_top] = stack[stack_top - 1];
-    if (go_left_votes > kThreads / 2) {
-      stack[stack_top - 1].misc.visited_branch = -1;
-      stack[stack_top].end = mid;
-    } else {
-      stack[stack_top - 1].misc.visited_branch = 1;
-      stack[stack_top].begin = mid + 1;
-    }
-    stack[stack_top].misc.level = stack[stack_top - 1].misc.level == 2
-                                      ? 0
-                                      : (stack[stack_top - 1].misc.level + 1);
-    stack[stack_top].misc.visited_branch = 0;
-  }
-  goto FIND_PROC;
 }
 RETURN : {
   if (stack_top > 0) {
@@ -173,11 +180,6 @@ RETURN : {
   if (cur_best_dist < threshold)
     should_stay[cur_nearest_point] = 0;
 }
-
-struct EqualToZero {
-  __host__ __device__ bool operator()(const int x) { return x == 0; }
-};
-
 }  // namespace
 
 void KdTreeGPU::Construct(CudaGraphicsResource<float>& x,
@@ -217,12 +219,16 @@ void KdTreeGPU::Construct(CudaGraphicsResource<float>& x,
   cudaGraphicsUnmapResources(1, &x_res);
 }
 
-void KdTreeGPU::RemoveNearest(CudaGraphicsResource<float>& x,
-                              CudaGraphicsResource<float>& y,
-                              CudaGraphicsResource<float>& z,
-                              CudaGraphicsResource<glm::vec3>& query_points,
-                              float threshold,
-                              bool construct) {
+std::vector<glm::vec3> KdTreeGPU::RemoveNearest(
+    CudaGraphicsResource<float>& x,
+    CudaGraphicsResource<float>& y,
+    CudaGraphicsResource<float>& z,
+    CudaGraphicsResource<glm::vec3>& query_points,
+    float threshold,
+    bool construct) {
+  if (query_points.GetSize() == 0)
+    return {};
+
   auto *x_res = x.GetCudaResource(), *y_res = y.GetCudaResource(),
        *z_res = z.GetCudaResource();
   auto* query_res = query_points.GetCudaResource();
@@ -249,20 +255,41 @@ void KdTreeGPU::RemoveNearest(CudaGraphicsResource<float>& x,
   thrust::fill(thrust::device_ptr<int>(dshould_stay),
                thrust::device_ptr<int>(dshould_stay) + x.GetSize(), 1);
 
-  int iteration = 0;
-  int max = query_points.GetSize() - kThreads * kBlocks;
-  for (; iteration < max; iteration += kThreads * kBlocks)
-    FindToRemoveKernel<<<kBlocks, kThreads>>>(
+  if (query_points.GetSize() < kThreads) {
+    FindToRemoveKernel<<<1, query_points.GetSize()>>>(
+        dx, dy, dz, x.GetSize(), dq, dshould_stay, threshold);
+  } else {
+    int iteration = 0;
+    int max = query_points.GetSize() - kThreads * kBlocks;
+    for (; iteration < max; iteration += kThreads * kBlocks)
+      FindToRemoveKernel<<<kBlocks, kThreads>>>(
+          dx, dy, dz, x.GetSize(), dq + 3 * iteration, dshould_stay, threshold);
+    FindToRemoveKernel<<<(query_points.GetSize() - iteration) / kThreads,
+                         kThreads>>>(
         dx, dy, dz, x.GetSize(), dq + 3 * iteration, dshould_stay, threshold);
-  FindToRemoveKernel<<<(query_points.GetSize() - iteration) / kThreads,
-                       kThreads>>>(dx, dy, dz, x.GetSize(), dq + 3 * iteration,
-                                   dshould_stay, threshold);
+  }
   cudaDeviceSynchronize();
-  printf("%s\n", cudaGetErrorString(cudaGetLastError()));
+
   thrust::device_ptr<int> should_stay_dev_ptr(dshould_stay);
   auto xyz = thrust::make_zip_iterator(thrust::make_tuple(
       thrust::device_ptr<float>(dx), thrust::device_ptr<float>(dy),
       thrust::device_ptr<float>(dz)));
+
+  auto number_of_eliminated =
+      x.GetSize() -
+      thrust::reduce(should_stay_dev_ptr, should_stay_dev_ptr + x.GetSize());
+  std::vector<glm::vec3> ret(number_of_eliminated);
+  if (number_of_eliminated) {
+    thrust::device_vector<thrust::tuple<float, float, float>> ret_dev_raw(
+        number_of_eliminated);
+    thrust::device_vector<glm::vec3> ret_dev(number_of_eliminated);
+    thrust::copy_if(xyz, xyz + x.GetSize(), should_stay_dev_ptr,
+                    ret_dev_raw.begin(), EqualToZero());
+    thrust::transform(ret_dev_raw.begin(), ret_dev_raw.end(), ret_dev.begin(),
+                      TupleToVec3());
+    thrust::copy(ret_dev.begin(), ret_dev.end(), ret.begin());
+  }
+
   auto removed = xyz + x.GetSize() -
                  thrust::remove_if(xyz, xyz + x.GetSize(), should_stay_dev_ptr,
                                    EqualToZero());
@@ -277,5 +304,7 @@ void KdTreeGPU::RemoveNearest(CudaGraphicsResource<float>& x,
   cudaGraphicsUnmapResources(1, &z_res);
   cudaGraphicsUnmapResources(1, &y_res);
   cudaGraphicsUnmapResources(1, &x_res);
+
+  return ret;
 }
 }  // namespace Sculptor

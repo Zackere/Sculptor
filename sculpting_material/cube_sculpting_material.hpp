@@ -23,18 +23,20 @@ class CubeSculptingMaterial {
   ~CubeSculptingMaterial();
 
   void Render(glm::mat4 const& vp);
-  void RotateLeft();
-  void RotateRight();
+  void Rotate(float amount);
 
   void Collide(glObject& object);
 
  private:
+  float angle_ = 0;
   float side_len_;
   HollowCubeGenerator hollow_cube_generator_;
   CubeGenerator cube_generator_;
   std::unique_ptr<glInstancedObject> visible_material_;
-  CudaGraphicsResource<glm::vec3> invisible_material_;
+  CudaGraphicsResource<float> invisible_material_x_, invisible_material_y_,
+      invisible_material_z_;
   std::unique_ptr<KdTree> kd_tree_constructor_;
   std::unique_ptr<KdTree> nearest_neighbour_finder_;
+  std::unique_ptr<MatrixApplierBase> matrix_applier_;
 };
 }  // namespace Sculptor

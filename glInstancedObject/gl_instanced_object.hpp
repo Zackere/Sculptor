@@ -4,6 +4,7 @@
 
 #include <glm/glm.hpp>
 #include <memory>
+#include <vector>
 
 #include "../cudaGraphics/cudaGraphicsResource/cuda_graphics_resource.hpp"
 
@@ -28,6 +29,8 @@ class glInstancedObject {
   CudaGraphicsResource<float>& GetVecticesX() { return x_positions_buffer_; }
   CudaGraphicsResource<float>& GetVecticesY() { return y_positions_buffer_; }
   CudaGraphicsResource<float>& GetVecticesZ() { return z_positions_buffer_; }
+
+  void AddInstances(std::vector<glm::vec3> const& instances);
 
  private:
   std::unique_ptr<glObject> reference_model_;

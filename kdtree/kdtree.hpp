@@ -1,6 +1,7 @@
 #pragma once
 
 #include <glm/glm.hpp>
+#include <vector>
 
 #include "../cudaGraphics/cudaGraphicsResource/cuda_graphics_resource.hpp"
 
@@ -13,11 +14,12 @@ class KdTree {
                          CudaGraphicsResource<float>& y,
                          CudaGraphicsResource<float>& z) = 0;
 
-  virtual void RemoveNearest(CudaGraphicsResource<float>& kd_x,
-                             CudaGraphicsResource<float>& kd_y,
-                             CudaGraphicsResource<float>& kd_z,
-                             CudaGraphicsResource<glm::vec3>& query_points,
-                             float threshold,
-                             bool construct) = 0;
+  virtual std::vector<glm::vec3> RemoveNearest(
+      CudaGraphicsResource<float>& kd_x,
+      CudaGraphicsResource<float>& kd_y,
+      CudaGraphicsResource<float>& kd_z,
+      CudaGraphicsResource<glm::vec3>& query_points,
+      float threshold,
+      bool construct) = 0;
 };
 }  // namespace Sculptor

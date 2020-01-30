@@ -79,4 +79,17 @@ void glInstancedObject::Transform(glm::mat4 const& m) {
                          x_positions_buffer_.GetSize(), m);
 }
 
+void glInstancedObject::AddInstances(std::vector<glm::vec3> const& instances) {
+  std::vector<float> coords(instances.size());
+  for (auto i = 0u; i < instances.size(); ++i)
+    coords[i] = instances[i].x;
+  x_positions_buffer_.Append(coords.data(), coords.size());
+  for (auto i = 0u; i < instances.size(); ++i)
+    coords[i] = instances[i].y;
+  y_positions_buffer_.Append(coords.data(), coords.size());
+  for (auto i = 0u; i < instances.size(); ++i)
+    coords[i] = instances[i].z;
+  z_positions_buffer_.Append(coords.data(), coords.size());
+}
+
 }  // namespace Sculptor

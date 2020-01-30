@@ -19,6 +19,7 @@ class CudaGraphicsResource {
   void SetData(ContentType const* data, size_t nelems);
   void PopBack(int n = 1) { size_ -= n; }
   void PushBack(ContentType const& elem);
+  void Append(ContentType const* data, size_t nelems);
 
  private:
   std::unique_ptr<cudaGraphicsResource, cudaError_t (*)(cudaGraphicsResource*)>
@@ -55,9 +56,15 @@ inline void CudaGraphicsResource<ContentType>::SetData(ContentType const* data,
 template <typename ContentType>
 inline void CudaGraphicsResource<ContentType>::PushBack(
     ContentType const& elem) {
+  Append(&elem, 1);
+}
+
+template <typename ContentType>
+inline void CudaGraphicsResource<ContentType>::Append(ContentType const* data,
+                                                      size_t nelems) {
   glBindBuffer(GL_ARRAY_BUFFER, gl_buffer_);
   glBufferSubData(GL_ARRAY_BUFFER, size_ * sizeof(ContentType),
-                  sizeof(ContentType), &elem);
-  ++size_;
+                  nelems * sizeof(ContentType), data);
+  size_ += nelems;
 }
 }  // namespace Sculptor

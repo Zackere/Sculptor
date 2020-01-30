@@ -77,14 +77,15 @@ void KdTreeCPU::Construct(CudaGraphicsResource<float>& x,
   cudaGraphicsUnmapResources(1, &x_res);
 }
 
-void KdTreeCPU::RemoveNearest(CudaGraphicsResource<float>& x,
-                              CudaGraphicsResource<float>& y,
-                              CudaGraphicsResource<float>& z,
-                              CudaGraphicsResource<glm::vec3>& query_points,
-                              float threshold,
-                              bool construct) {
+std::vector<glm::vec3> KdTreeCPU::RemoveNearest(
+    CudaGraphicsResource<float>& x,
+    CudaGraphicsResource<float>& y,
+    CudaGraphicsResource<float>& z,
+    CudaGraphicsResource<glm::vec3>& query_points,
+    float threshold,
+    bool construct) {
   if (!x.GetSize())
-    return;
+    return {};
 
   auto x_res = x.GetCudaResource(), y_res = y.GetCudaResource(),
        z_res = z.GetCudaResource(), query_res = query_points.GetCudaResource();
@@ -131,7 +132,10 @@ void KdTreeCPU::RemoveNearest(CudaGraphicsResource<float>& x,
     if (best_distance_ < threshold)
       to_be_removed.insert(closest_node_);
   }
+  std::vector<glm::vec3> ret;
+  ret.reserve(to_be_removed.size());
   for (auto it : to_be_removed) {
+    ret.emplace_back(*it);
     using std::swap;
     swap(*it, kd.back());
     kd.pop_back();
@@ -150,6 +154,8 @@ void KdTreeCPU::RemoveNearest(CudaGraphicsResource<float>& x,
   cudaGraphicsUnmapResources(1, &z_res);
   cudaGraphicsUnmapResources(1, &y_res);
   cudaGraphicsUnmapResources(1, &x_res);
+
+  return ret;
 }
 
 void KdTreeCPU::FindNearestRecursive(std::vector<glm::vec3>::iterator begin,

@@ -81,6 +81,25 @@ __global__ void ApplyKernel(float* x, float* y, float* z, int size) {
   }
 }
 }  // namespace
+void MatrixApplier::Apply(std::vector<glm::vec3>& vectors,
+                          glm::mat4 const& matrix) {
+  auto extra_space = vectors.size() % (kThreads * kBlocks);
+  if (extra_space != 0)
+    extra_space = kThreads * kBlocks - extra_space;
+
+  float* dvectors = nullptr;
+  cudaMalloc(&dvectors, sizeof(float) * 3 * (vectors.size() + extra_space));
+  cudaMemcpy(dvectors, vectors.data(), sizeof(float) * 3 * vectors.size(),
+             cudaMemcpyHostToDevice);
+  cudaMemcpyToSymbol(c_matrix, &matrix, sizeof(c_matrix), 0);
+  ApplyKernel<<<kBlocks, kThreads>>>(dvectors,
+                                     3 * (vectors.size() + extra_space));
+  cudaMemcpy(vectors.data(), dvectors, sizeof(float) * 3 * vectors.size(),
+             cudaMemcpyDeviceToHost);
+  cudaDeviceSynchronize();
+  cudaFree(dvectors);
+}
+
 void MatrixApplier::Apply(cudaGraphicsResource* vectors,
                           int nvectors,
                           glm::mat4 const& matrix) {
@@ -120,5 +139,9 @@ void MatrixApplier::Apply(cudaGraphicsResource* x,
   cudaGraphicsUnmapResources(1, &z);
   cudaGraphicsUnmapResources(1, &y);
   cudaGraphicsUnmapResources(1, &x);
+}
+
+std::unique_ptr<MatrixApplierBase> MatrixApplier::Clone() const {
+  return std::make_unique<MatrixApplier>();
 }
 }  // namespace Sculptor
