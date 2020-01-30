@@ -1,5 +1,6 @@
 #include "cube_sculpting_material.hpp"
 
+#include <future>
 #include <glm/gtc/matrix_transform.hpp>
 #include <utility>
 #include <vector>
@@ -69,15 +70,35 @@ void CubeSculptingMaterial::Rotate(float amount) {
 }
 
 void CubeSculptingMaterial::Collide(glObject& object) {
-  kd_tree_constructor_->Construct(visible_material_->GetVecticesX(),
-                                  visible_material_->GetVecticesY(),
-                                  visible_material_->GetVecticesZ());
-  std::vector<glm::vec3> removed;
-  removed = nearest_neighbour_finder_->RemoveNearest(
+  auto invisible_res = kd_tree_constructor_->LoadResources(
+      invisible_material_x_, invisible_material_y_, invisible_material_z_);
+  auto constructor_future = kd_tree_constructor_->Construct(
+      std::get<0>(invisible_res), std::get<1>(invisible_res),
+      std::get<2>(invisible_res), invisible_material_x_.GetSize());
+
+  auto visible_res = kd_tree_constructor_->LoadResources(
+      visible_material_->GetVecticesX(), visible_material_->GetVecticesY(),
+      visible_material_->GetVecticesZ());
+  kd_tree_constructor_
+      ->Construct(std::get<0>(visible_res), std::get<1>(visible_res),
+                  std::get<2>(visible_res),
+                  visible_material_->GetVecticesX().GetSize())
+      .get();
+  kd_tree_constructor_->UnloadResources(std::get<0>(visible_res),
+                                        std::get<1>(visible_res),
+                                        std::get<2>(visible_res));
+
+  std::vector<glm::vec3> removed = nearest_neighbour_finder_->RemoveNearest(
       visible_material_->GetVecticesX(), visible_material_->GetVecticesY(),
       visible_material_->GetVecticesZ(), *object.GetVertices(), side_len_ / 2);
-  if (removed.empty())
+
+  if (removed.empty()) {
+    constructor_future.get();
+    kd_tree_constructor_->UnloadResources(std::get<0>(invisible_res),
+                                          std::get<1>(invisible_res),
+                                          std::get<2>(invisible_res));
     return;
+  }
 
   auto m_back = glm::rotate(glm::mat4(1.f), -angle_, glm::vec3{0, 1, 0});
   auto m_for = glm::rotate(glm::mat4(1.f), angle_, glm::vec3{0, 1, 0});
@@ -96,8 +117,11 @@ void CubeSculptingMaterial::Collide(glObject& object) {
   CudaGraphicsResource<glm::vec3> to_be_added_resource(to_be_added.size());
   to_be_added_resource.SetData(to_be_added.data(), to_be_added.size());
 
-  kd_tree_constructor_->Construct(invisible_material_x_, invisible_material_y_,
-                                  invisible_material_z_);
+  constructor_future.get();
+  kd_tree_constructor_->UnloadResources(std::get<0>(invisible_res),
+                                        std::get<1>(invisible_res),
+                                        std::get<2>(invisible_res));
+
   removed = nearest_neighbour_finder_->RemoveNearest(
       invisible_material_x_, invisible_material_y_, invisible_material_z_,
       to_be_added_resource, kEps);

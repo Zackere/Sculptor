@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.12)
 project(Sculptor LANGUAGES CXX)
-set(CMAKE_CXX_CLANG_TIDY clang-tidy -checks=-*,cert-*,cppcoreguidelines-*,clang-analyzer-*,performance-*,modernize-*,bugprone-*)
-set(CMAKE_CXX_CPPLINT "cpplint")
+# set(CMAKE_CXX_CLANG_TIDY clang-tidy -checks=-*,cert-*,cppcoreguidelines-*,clang-analyzer-*,performance-*,modernize-*,bugprone-*)
+# set(CMAKE_CXX_CPPLINT "cpplint")
 
 file(GLOB source_files
     ${CMAKE_SOURCE_DIR}/*/*.cpp
@@ -41,7 +41,6 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY CUDA_STANDARD 14)
 set(CUDA_NVCC_FLAGS "--maxrregcount 32 -O2")
 set(CMAKE_CXX_FLAGS
     "-std=c++17 -O2            \
-    -Weffc++                   \
     -Wredundant-decls          \
     -Wall                      \
     -Wextra                    \

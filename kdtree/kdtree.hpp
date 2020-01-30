@@ -1,7 +1,9 @@
 #pragma once
 
+#include <future>
 #include <glm/glm.hpp>
 #include <memory>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -18,9 +20,19 @@ class KdTreeConstructor {
   KdTreeConstructor(std::unique_ptr<Algorithm> alg)
       : construction_algorithm_(std::move(alg)) {}
 
-  void Construct(CudaGraphicsResource<float>& x,
-                 CudaGraphicsResource<float>& y,
-                 CudaGraphicsResource<float>& z);
+  [[nodiscard]] std::future<void> Construct(cudaGraphicsResource* kd_x,
+                                            cudaGraphicsResource* kd_y,
+                                            cudaGraphicsResource* kd_z,
+                                            int size);
+
+  [[nodiscard]] std::
+      tuple<cudaGraphicsResource*, cudaGraphicsResource*, cudaGraphicsResource*>
+      LoadResources(CudaGraphicsResource<float>& kd_x,
+                    CudaGraphicsResource<float>& kd_y,
+                    CudaGraphicsResource<float>& kd_z);
+  void UnloadResources(cudaGraphicsResource* kd_x,
+                       cudaGraphicsResource* kd_y,
+                       cudaGraphicsResource* kd_z);
 
  private:
   std::unique_ptr<Algorithm> construction_algorithm_ = nullptr;
