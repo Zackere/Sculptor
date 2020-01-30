@@ -5,6 +5,8 @@
 
 #include <memory>
 
+#include "../../util/cudaCheckError.hpp"
+
 namespace Sculptor {
 template <typename ContentType>
 class CudaGraphicsResource {
@@ -36,7 +38,8 @@ inline CudaGraphicsResource<ContentType>::CudaGraphicsResource(size_t capacity)
   glBufferData(GL_ARRAY_BUFFER, capacity * sizeof(ContentType), nullptr,
                GL_STATIC_DRAW);
   cudaGraphicsResource* res = nullptr;
-  cudaGraphicsGLRegisterBuffer(&res, gl_buffer_, cudaGraphicsMapFlagsNone);
+  SculptorCudaCheckError(
+      cudaGraphicsGLRegisterBuffer(&res, gl_buffer_, cudaGraphicsMapFlagsNone));
   cuda_resource_.reset(res);
 }
 

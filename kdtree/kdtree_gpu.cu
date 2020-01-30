@@ -13,6 +13,8 @@
 
 #include <iterator>
 
+#include "../util/cudaCheckError.hpp"
+
 namespace Sculptor {
 namespace {
 constexpr int kThreads = 128;
@@ -206,7 +208,8 @@ std::vector<glm::vec3> KdTreeGPU::RemoveNearest(float* x,
                                                 int query_points_size,
                                                 float threshold) {
   int* dshould_stay;
-  cudaMalloc(reinterpret_cast<void**>(&dshould_stay), sizeof(int) * kd_size);
+  SculptorCudaCheckError(cudaMalloc(reinterpret_cast<void**>(&dshould_stay),
+                                    sizeof(int) * kd_size));
   thrust::fill(thrust::device_ptr<int>(dshould_stay),
                thrust::device_ptr<int>(dshould_stay) + kd_size, 1);
 
@@ -226,6 +229,7 @@ std::vector<glm::vec3> KdTreeGPU::RemoveNearest(float* x,
                                      threshold);
   }
   cudaDeviceSynchronize();
+  SculptorCudaCheckError(cudaGetLastError());
 
   thrust::device_ptr<int> should_stay_dev_ptr(dshould_stay);
   auto xyz = thrust::make_zip_iterator(thrust::make_tuple(
@@ -246,7 +250,7 @@ std::vector<glm::vec3> KdTreeGPU::RemoveNearest(float* x,
   thrust::copy(ret_dev.begin(), ret_dev.end(), ret.begin());
 
   thrust::remove_if(xyz, xyz + kd_size, should_stay_dev_ptr, EqualToZero());
-  cudaFree(dshould_stay);
+  SculptorCudaCheckError(cudaFree(dshould_stay));
 
   return ret;
 }

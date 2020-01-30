@@ -11,8 +11,8 @@
 namespace Sculptor {
 namespace {
 constexpr int kMatrixSize = 4;
-constexpr int kThreads = 128;
-constexpr int kBlocks = 32;
+constexpr int kThreads = 256;
+constexpr int kBlocks = 64;
 
 __constant__ float c_matrix[kMatrixSize][kMatrixSize];
 
