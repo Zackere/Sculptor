@@ -1,5 +1,6 @@
 #include "obj_provider.hpp"
 
+#include <cstring>
 #include <iostream>
 #include <memory>
 
