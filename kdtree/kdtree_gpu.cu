@@ -213,21 +213,24 @@ std::vector<glm::vec3> KdTreeGPU::RemoveNearest(float* x,
   thrust::fill(thrust::device_ptr<int>(dshould_stay),
                thrust::device_ptr<int>(dshould_stay) + kd_size, 1);
 
-  if (query_points_size < kThreads) {
-    FindToRemoveKernel<<<1, query_points_size>>>(x, y, z, kd_size, query_points,
-                                                 dshould_stay, threshold);
-  } else {
-    int iteration = 0;
-    int max = query_points_size - kThreads * kBlocks;
-    for (; iteration < max; iteration += kThreads * kBlocks)
-      FindToRemoveKernel<<<kBlocks, kThreads>>>(x, y, z, kd_size,
-                                                query_points + 3 * iteration,
-                                                dshould_stay, threshold);
-    FindToRemoveKernel<<<(query_points_size - iteration) / kThreads,
-                         kThreads>>>(x, y, z, kd_size,
-                                     query_points + 3 * iteration, dshould_stay,
-                                     threshold);
-  }
+  int iteration = 0;
+  int excess = query_points_size % (kThreads * kBlocks);
+  int max = query_points_size - excess;
+  for (; iteration < max; iteration += kThreads * kBlocks)
+    FindToRemoveKernel<<<kBlocks, kThreads>>>(x, y, z, kd_size,
+                                              query_points + 3 * iteration,
+                                              dshould_stay, threshold);
+  if (excess > kThreads)
+    FindToRemoveKernel<<<excess / kThreads, kThreads>>>(
+        x, y, z, kd_size, query_points + 3 * iteration, dshould_stay,
+        threshold);
+  iteration += (excess / kThreads) * kThreads;
+  excess %= kThreads;
+  if (excess > 0)
+    FindToRemoveKernel<<<1, excess>>>(x, y, z, kd_size,
+                                      query_points + 3 * iteration,
+                                      dshould_stay, threshold);
+
   cudaDeviceSynchronize();
   SculptorCudaCheckError(cudaGetLastError());
 
