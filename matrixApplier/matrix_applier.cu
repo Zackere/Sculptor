@@ -6,6 +6,7 @@
 #include <cuda_runtime_api.h>
 #include <device_launch_parameters.h>
 #include <stdio.h>
+#include <thrust/device_vector.h>
 
 namespace Sculptor {
 namespace {
@@ -83,21 +84,13 @@ __global__ void ApplyKernel(float* x, float* y, float* z, int size) {
 }  // namespace
 void MatrixApplier::Apply(std::vector<glm::vec3>& vectors,
                           glm::mat4 const& matrix) {
-  auto extra_space = vectors.size() % (kThreads * kBlocks);
-  if (extra_space != 0)
-    extra_space = kThreads * kBlocks - extra_space;
-
-  float* dvectors = nullptr;
-  cudaMalloc(&dvectors, sizeof(float) * 3 * (vectors.size() + extra_space));
-  cudaMemcpy(dvectors, vectors.data(), sizeof(float) * 3 * vectors.size(),
-             cudaMemcpyHostToDevice);
+  thrust::device_vector<glm::vec3> dvectors = vectors;
   cudaMemcpyToSymbol(c_matrix, &matrix, sizeof(c_matrix), 0);
-  ApplyKernel<<<kBlocks, kThreads>>>(dvectors,
-                                     3 * (vectors.size() + extra_space));
-  cudaMemcpy(vectors.data(), dvectors, sizeof(float) * 3 * vectors.size(),
-             cudaMemcpyDeviceToHost);
+  ApplyKernel<<<kBlocks, kThreads>>>(
+      reinterpret_cast<float*>(thrust::raw_pointer_cast(dvectors.data())),
+      3 * dvectors.size());
   cudaDeviceSynchronize();
-  cudaFree(dvectors);
+  thrust::copy(dvectors.begin(), dvectors.end(), vectors.begin());
 }
 
 void MatrixApplier::Apply(cudaGraphicsResource* vectors,

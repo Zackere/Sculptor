@@ -15,7 +15,7 @@
 #include "../kdtree/kdtree_gpu.hpp"
 #include "../matrixApplier/matrix_applier.hpp"
 #include "../modelProvider/obj_provider.hpp"
-#include "../sculpting_material/cube_sculpting_material.hpp"
+#include "../sculptingMaterial/cube_sculpting_material.hpp"
 #include "../shaderProvider/shader_provider.hpp"
 #include "../textureProvider/png_texture_provider.hpp"
 
