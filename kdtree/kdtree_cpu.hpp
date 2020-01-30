@@ -7,21 +7,20 @@
 #include "kdtree.hpp"
 
 namespace Sculptor {
-class KdTreeCPU : public KdTree {
+class KdTreeCPU : public KdTreeConstructor::Algorithm,
+                  public KdTreeRemover::Algorithm {
  public:
   virtual ~KdTreeCPU() = default;
 
-  void Construct(CudaGraphicsResource<float>& x,
-                 CudaGraphicsResource<float>& y,
-                 CudaGraphicsResource<float>& z) override;
+  void Construct(float* x, float* y, float* z, int size) override;
 
-  std::vector<glm::vec3> RemoveNearest(
-      CudaGraphicsResource<float>& kd_x,
-      CudaGraphicsResource<float>& kd_y,
-      CudaGraphicsResource<float>& kd_z,
-      CudaGraphicsResource<glm::vec3>& query_points,
-      float threshold,
-      bool construct) override;
+  std::vector<glm::vec3> RemoveNearest(float* x,
+                                       float* y,
+                                       float* z,
+                                       int kd_size,
+                                       float* query_points,
+                                       int query_points_size,
+                                       float threshold) override;
 
  private:
   glm::vec3 query_point_ = {0, 0, 0};

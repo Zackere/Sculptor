@@ -28,37 +28,13 @@ void ConstructRecursive(RandomIt begin, RandomIt end, int level) {
   ConstructRecursive(mid + 1, end, level);
 }
 }  // namespace
-void KdTreeCPU::Construct(CudaGraphicsResource<float>& x,
-                          CudaGraphicsResource<float>& y,
-                          CudaGraphicsResource<float>& z) {
-  if (!x.GetSize())
-    return;
+void KdTreeCPU::Construct(float* x, float* y, float* z, int size) {
+  std::vector<float> kd_x(size), kd_y(size), kd_z(size);
+  cudaMemcpy(kd_x.data(), x, size * sizeof(float), cudaMemcpyDeviceToHost);
+  cudaMemcpy(kd_y.data(), y, size * sizeof(float), cudaMemcpyDeviceToHost);
+  cudaMemcpy(kd_z.data(), z, size * sizeof(float), cudaMemcpyDeviceToHost);
 
-  auto *x_res = x.GetCudaResource(), *y_res = y.GetCudaResource(),
-       *z_res = z.GetCudaResource();
-
-  cudaGraphicsMapResources(1, &x_res);
-  cudaGraphicsMapResources(1, &y_res);
-  cudaGraphicsMapResources(1, &z_res);
-
-  float *dx, *dy, *dz;
-  size_t num_bytes;
-  cudaGraphicsResourceGetMappedPointer(reinterpret_cast<void**>(&dx),
-                                       &num_bytes, x_res);
-  cudaGraphicsResourceGetMappedPointer(reinterpret_cast<void**>(&dy),
-                                       &num_bytes, y_res);
-  cudaGraphicsResourceGetMappedPointer(reinterpret_cast<void**>(&dz),
-                                       &num_bytes, z_res);
-
-  std::vector<float> kd_x(x.GetSize()), kd_y(y.GetSize()), kd_z(z.GetSize());
-  cudaMemcpy(kd_x.data(), dx, x.GetSize() * sizeof(float),
-             cudaMemcpyDeviceToHost);
-  cudaMemcpy(kd_y.data(), dy, y.GetSize() * sizeof(float),
-             cudaMemcpyDeviceToHost);
-  cudaMemcpy(kd_z.data(), dz, z.GetSize() * sizeof(float),
-             cudaMemcpyDeviceToHost);
-
-  std::vector<glm::vec3> kd(x.GetSize());
+  std::vector<glm::vec3> kd(size);
   for (auto i = 0u; i < kd.size(); ++i)
     kd[i] = {kd_x[i], kd_y[i], kd_z[i]};
   ConstructRecursive(kd.begin(), kd.end(), 0);
@@ -68,61 +44,30 @@ void KdTreeCPU::Construct(CudaGraphicsResource<float>& x,
     kd_z[i] = kd[i].z;
   }
 
-  x.SetData(kd_x.data(), kd_x.size());
-  y.SetData(kd_y.data(), kd_y.size());
-  z.SetData(kd_z.data(), kd_z.size());
-
-  cudaGraphicsUnmapResources(1, &z_res);
-  cudaGraphicsUnmapResources(1, &y_res);
-  cudaGraphicsUnmapResources(1, &x_res);
+  cudaMemcpy(x, kd_x.data(), size * sizeof(float), cudaMemcpyHostToDevice);
+  cudaMemcpy(y, kd_y.data(), size * sizeof(float), cudaMemcpyHostToDevice);
+  cudaMemcpy(z, kd_z.data(), size * sizeof(float), cudaMemcpyHostToDevice);
 }
 
-std::vector<glm::vec3> KdTreeCPU::RemoveNearest(
-    CudaGraphicsResource<float>& x,
-    CudaGraphicsResource<float>& y,
-    CudaGraphicsResource<float>& z,
-    CudaGraphicsResource<glm::vec3>& query_points,
-    float threshold,
-    bool construct) {
-  if (!x.GetSize())
-    return {};
+std::vector<glm::vec3> KdTreeCPU::RemoveNearest(float* x,
+                                                float* y,
+                                                float* z,
+                                                int kd_size,
+                                                float* query_points,
+                                                int query_points_size,
+                                                float threshold) {
+  std::vector<float> kd_x(kd_size), kd_y(kd_size), kd_z(kd_size);
+  cudaMemcpy(kd_x.data(), x, kd_size * sizeof(float), cudaMemcpyDeviceToHost);
+  cudaMemcpy(kd_y.data(), y, kd_size * sizeof(float), cudaMemcpyDeviceToHost);
+  cudaMemcpy(kd_z.data(), z, kd_size * sizeof(float), cudaMemcpyDeviceToHost);
+  std::vector<glm::vec3> queries(query_points_size);
+  cudaMemcpy(queries.data(), query_points,
+             query_points_size * sizeof(glm::vec3), cudaMemcpyDeviceToHost);
 
-  auto x_res = x.GetCudaResource(), y_res = y.GetCudaResource(),
-       z_res = z.GetCudaResource(), query_res = query_points.GetCudaResource();
-
-  cudaGraphicsMapResources(1, &x_res);
-  cudaGraphicsMapResources(1, &y_res);
-  cudaGraphicsMapResources(1, &z_res);
-  cudaGraphicsMapResources(1, &query_res);
-
-  float *dx, *dy, *dz;
-  glm::vec3* dq;
-  size_t num_bytes;
-  cudaGraphicsResourceGetMappedPointer(reinterpret_cast<void**>(&dx),
-                                       &num_bytes, x_res);
-  cudaGraphicsResourceGetMappedPointer(reinterpret_cast<void**>(&dy),
-                                       &num_bytes, y_res);
-  cudaGraphicsResourceGetMappedPointer(reinterpret_cast<void**>(&dz),
-                                       &num_bytes, z_res);
-  cudaGraphicsResourceGetMappedPointer(reinterpret_cast<void**>(&dq),
-                                       &num_bytes, query_res);
-
-  std::vector<float> kd_x(x.GetSize()), kd_y(y.GetSize()), kd_z(z.GetSize());
-  cudaMemcpy(kd_x.data(), dx, x.GetSize() * sizeof(float),
-             cudaMemcpyDeviceToHost);
-  cudaMemcpy(kd_y.data(), dy, y.GetSize() * sizeof(float),
-             cudaMemcpyDeviceToHost);
-  cudaMemcpy(kd_z.data(), dz, z.GetSize() * sizeof(float),
-             cudaMemcpyDeviceToHost);
-  std::vector<glm::vec3> queries(query_points.GetSize());
-  cudaMemcpy(queries.data(), dq, query_points.GetSize() * sizeof(glm::vec3),
-             cudaMemcpyDeviceToHost);
-
-  std::vector<glm::vec3> kd(x.GetSize());
+  std::vector<glm::vec3> kd(kd_size);
   for (auto i = 0u; i < kd.size(); ++i)
     kd[i] = {kd_x[i], kd_y[i], kd_z[i]};
-  if (construct)
-    ConstructRecursive(kd.begin(), kd.end(), 0);
+
   std::set<std::vector<glm::vec3>::iterator, std::greater<>> to_be_removed;
   for (auto const& v : queries) {
     closest_node_ = kd.begin() + (kd.end() - kd.begin()) / 2;
@@ -146,14 +91,12 @@ std::vector<glm::vec3> KdTreeCPU::RemoveNearest(
     kd_z[i] = kd[i].z;
   }
 
-  x.SetData(kd_x.data(), kd.size());
-  y.SetData(kd_y.data(), kd.size());
-  z.SetData(kd_z.data(), kd.size());
-
-  cudaGraphicsUnmapResources(1, &query_res);
-  cudaGraphicsUnmapResources(1, &z_res);
-  cudaGraphicsUnmapResources(1, &y_res);
-  cudaGraphicsUnmapResources(1, &x_res);
+  cudaMemcpy(x, kd_x.data(), kd_x.size() * sizeof(float),
+             cudaMemcpyHostToDevice);
+  cudaMemcpy(y, kd_y.data(), kd_y.size() * sizeof(float),
+             cudaMemcpyHostToDevice);
+  cudaMemcpy(z, kd_z.data(), kd_z.size() * sizeof(float),
+             cudaMemcpyHostToDevice);
 
   return ret;
 }

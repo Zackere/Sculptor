@@ -66,7 +66,8 @@ int Sculptor::Main() {
 
   CubeSculptingMaterial material(
       ncubes, std::move(cube), std::make_unique<MatrixApplier>(),
-      std::make_unique<KdTreeCPU>(), std::make_unique<KdTreeGPU>());
+      std::make_unique<KdTreeConstructor>(std::make_unique<KdTreeCPU>()),
+      std::make_unique<KdTreeRemover>(std::make_unique<KdTreeGPU>()));
 
   std::unique_ptr<glObject> drill_model = std::make_unique<glObject>(
       std::make_unique<ObjProvider>(base + "model/drill.obj"),

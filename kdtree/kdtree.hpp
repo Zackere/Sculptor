@@ -1,25 +1,55 @@
 #pragma once
 
 #include <glm/glm.hpp>
+#include <memory>
+#include <utility>
 #include <vector>
 
 #include "../cudaGraphics/cudaGraphicsResource/cuda_graphics_resource.hpp"
 
 namespace Sculptor {
-class KdTree {
+class KdTreeConstructor {
  public:
-  virtual ~KdTree() = default;
+  class Algorithm {
+   public:
+    virtual ~Algorithm() = default;
+    virtual void Construct(float* x, float* y, float* z, int size) = 0;
+  };
+  KdTreeConstructor(std::unique_ptr<Algorithm> alg)
+      : construction_algorithm_(std::move(alg)) {}
 
-  virtual void Construct(CudaGraphicsResource<float>& x,
-                         CudaGraphicsResource<float>& y,
-                         CudaGraphicsResource<float>& z) = 0;
+  void Construct(CudaGraphicsResource<float>& x,
+                 CudaGraphicsResource<float>& y,
+                 CudaGraphicsResource<float>& z);
 
-  virtual std::vector<glm::vec3> RemoveNearest(
+ private:
+  std::unique_ptr<Algorithm> construction_algorithm_ = nullptr;
+};
+
+class KdTreeRemover {
+ public:
+  class Algorithm {
+   public:
+    virtual ~Algorithm() = default;
+    virtual std::vector<glm::vec3> RemoveNearest(float* x,
+                                                 float* y,
+                                                 float* z,
+                                                 int kd_size,
+                                                 float* query_points,
+                                                 int query_points_size,
+                                                 float threshold) = 0;
+  };
+  KdTreeRemover(std::unique_ptr<Algorithm> alg)
+      : remove_algorithm_(std::move(alg)) {}
+
+  std::vector<glm::vec3> RemoveNearest(
       CudaGraphicsResource<float>& kd_x,
       CudaGraphicsResource<float>& kd_y,
       CudaGraphicsResource<float>& kd_z,
       CudaGraphicsResource<glm::vec3>& query_points,
-      float threshold,
-      bool construct) = 0;
+      float threshold);
+
+ private:
+  std::unique_ptr<Algorithm> remove_algorithm_ = nullptr;
 };
 }  // namespace Sculptor

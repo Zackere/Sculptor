@@ -11,6 +11,8 @@
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/sort.h>
 
+#include <iterator>
+
 namespace Sculptor {
 namespace {
 constexpr int kThreads = 128;
@@ -182,128 +184,69 @@ RETURN : {
 }
 }  // namespace
 
-void KdTreeGPU::Construct(CudaGraphicsResource<float>& x,
-                          CudaGraphicsResource<float>& y,
-                          CudaGraphicsResource<float>& z) {
-  auto *x_res = x.GetCudaResource(), *y_res = y.GetCudaResource(),
-       *z_res = z.GetCudaResource();
+void KdTreeGPU::Construct(float* x, float* y, float* z, int size) {
+  thrust::device_vector<int> x_int(size), y_int(size), z_int(size);
 
-  cudaGraphicsMapResources(1, &x_res);
-  cudaGraphicsMapResources(1, &y_res);
-  cudaGraphicsMapResources(1, &z_res);
+  thrust::transform(x, x + size, x_int.begin(), ScaleFunctor());
+  thrust::transform(y, y + size, y_int.begin(), ScaleFunctor());
+  thrust::transform(z, z + size, z_int.begin(), ScaleFunctor());
 
-  thrust::device_ptr<float> dx, dy, dz;
-  size_t num_bytes;
-  cudaGraphicsResourceGetMappedPointer(reinterpret_cast<void**>(&dx),
-                                       &num_bytes, x_res);
-  cudaGraphicsResourceGetMappedPointer(reinterpret_cast<void**>(&dy),
-                                       &num_bytes, y_res);
-  cudaGraphicsResourceGetMappedPointer(reinterpret_cast<void**>(&dz),
-                                       &num_bytes, z_res);
+  ConstructRecursive(x_int, y_int, z_int, 0, size);
 
-  thrust::device_vector<int> x_int(x.GetSize()), y_int(y.GetSize()),
-      z_int(z.GetSize());
-
-  thrust::transform(dx, dx + x.GetSize(), x_int.begin(), ScaleFunctor());
-  thrust::transform(dy, dy + y.GetSize(), y_int.begin(), ScaleFunctor());
-  thrust::transform(dz, dz + z.GetSize(), z_int.begin(), ScaleFunctor());
-
-  ConstructRecursive(x_int, y_int, z_int, 0, x_int.size());
-
-  thrust::transform(x_int.begin(), x_int.end(), dx, ScaleFunctor());
-  thrust::transform(y_int.begin(), y_int.end(), dy, ScaleFunctor());
-  thrust::transform(z_int.begin(), z_int.end(), dz, ScaleFunctor());
-
-  cudaGraphicsUnmapResources(1, &z_res);
-  cudaGraphicsUnmapResources(1, &y_res);
-  cudaGraphicsUnmapResources(1, &x_res);
+  thrust::transform(x_int.begin(), x_int.end(), x, ScaleFunctor());
+  thrust::transform(y_int.begin(), y_int.end(), y, ScaleFunctor());
+  thrust::transform(z_int.begin(), z_int.end(), z, ScaleFunctor());
 }
 
-std::vector<glm::vec3> KdTreeGPU::RemoveNearest(
-    CudaGraphicsResource<float>& x,
-    CudaGraphicsResource<float>& y,
-    CudaGraphicsResource<float>& z,
-    CudaGraphicsResource<glm::vec3>& query_points,
-    float threshold,
-    bool construct) {
-  if (query_points.GetSize() == 0)
-    return {};
-
-  auto *x_res = x.GetCudaResource(), *y_res = y.GetCudaResource(),
-       *z_res = z.GetCudaResource();
-  auto* query_res = query_points.GetCudaResource();
-  cudaGraphicsMapResources(1, &x_res);
-  cudaGraphicsMapResources(1, &y_res);
-  cudaGraphicsMapResources(1, &z_res);
-  cudaGraphicsMapResources(1, &query_res);
-
-  float *dx, *dy, *dz;
-  float* dq;
-  size_t num_bytes;
-  cudaGraphicsResourceGetMappedPointer(reinterpret_cast<void**>(&dx),
-                                       &num_bytes, x_res);
-  cudaGraphicsResourceGetMappedPointer(reinterpret_cast<void**>(&dy),
-                                       &num_bytes, y_res);
-  cudaGraphicsResourceGetMappedPointer(reinterpret_cast<void**>(&dz),
-                                       &num_bytes, z_res);
-  cudaGraphicsResourceGetMappedPointer(reinterpret_cast<void**>(&dq),
-                                       &num_bytes, query_res);
-
+std::vector<glm::vec3> KdTreeGPU::RemoveNearest(float* x,
+                                                float* y,
+                                                float* z,
+                                                int kd_size,
+                                                float* query_points,
+                                                int query_points_size,
+                                                float threshold) {
   int* dshould_stay;
-  cudaMalloc(reinterpret_cast<void**>(&dshould_stay),
-             sizeof(int) * x.GetSize());
+  cudaMalloc(reinterpret_cast<void**>(&dshould_stay), sizeof(int) * kd_size);
   thrust::fill(thrust::device_ptr<int>(dshould_stay),
-               thrust::device_ptr<int>(dshould_stay) + x.GetSize(), 1);
+               thrust::device_ptr<int>(dshould_stay) + kd_size, 1);
 
-  if (query_points.GetSize() < kThreads) {
-    FindToRemoveKernel<<<1, query_points.GetSize()>>>(
-        dx, dy, dz, x.GetSize(), dq, dshould_stay, threshold);
+  if (query_points_size < kThreads) {
+    FindToRemoveKernel<<<1, query_points_size>>>(x, y, z, kd_size, query_points,
+                                                 dshould_stay, threshold);
   } else {
     int iteration = 0;
-    int max = query_points.GetSize() - kThreads * kBlocks;
+    int max = query_points_size - kThreads * kBlocks;
     for (; iteration < max; iteration += kThreads * kBlocks)
-      FindToRemoveKernel<<<kBlocks, kThreads>>>(
-          dx, dy, dz, x.GetSize(), dq + 3 * iteration, dshould_stay, threshold);
-    FindToRemoveKernel<<<(query_points.GetSize() - iteration) / kThreads,
-                         kThreads>>>(
-        dx, dy, dz, x.GetSize(), dq + 3 * iteration, dshould_stay, threshold);
+      FindToRemoveKernel<<<kBlocks, kThreads>>>(x, y, z, kd_size,
+                                                query_points + 3 * iteration,
+                                                dshould_stay, threshold);
+    FindToRemoveKernel<<<(query_points_size - iteration) / kThreads,
+                         kThreads>>>(x, y, z, kd_size,
+                                     query_points + 3 * iteration, dshould_stay,
+                                     threshold);
   }
   cudaDeviceSynchronize();
 
   thrust::device_ptr<int> should_stay_dev_ptr(dshould_stay);
   auto xyz = thrust::make_zip_iterator(thrust::make_tuple(
-      thrust::device_ptr<float>(dx), thrust::device_ptr<float>(dy),
-      thrust::device_ptr<float>(dz)));
+      thrust::device_ptr<float>(x), thrust::device_ptr<float>(y),
+      thrust::device_ptr<float>(z)));
+  auto to_remove = kd_size - thrust::reduce(should_stay_dev_ptr,
+                                            should_stay_dev_ptr + kd_size);
+  thrust::device_vector<thrust::tuple<float, float, float>> ret_dev_raw(
+      to_remove);
+  auto ret_dev_raw_end =
+      thrust::copy_if(xyz, xyz + kd_size, should_stay_dev_ptr,
+                      ret_dev_raw.begin(), EqualToZero());
+  thrust::device_vector<glm::vec3> ret_dev(ret_dev_raw_end -
+                                           ret_dev_raw.begin());
+  thrust::transform(ret_dev_raw.begin(), ret_dev_raw_end, ret_dev.begin(),
+                    TupleToVec3());
+  std::vector<glm::vec3> ret(ret_dev_raw_end - ret_dev_raw.begin());
+  thrust::copy(ret_dev.begin(), ret_dev.end(), ret.begin());
 
-  auto number_of_eliminated =
-      x.GetSize() -
-      thrust::reduce(should_stay_dev_ptr, should_stay_dev_ptr + x.GetSize());
-  std::vector<glm::vec3> ret(number_of_eliminated);
-  if (number_of_eliminated) {
-    thrust::device_vector<thrust::tuple<float, float, float>> ret_dev_raw(
-        number_of_eliminated);
-    thrust::device_vector<glm::vec3> ret_dev(number_of_eliminated);
-    thrust::copy_if(xyz, xyz + x.GetSize(), should_stay_dev_ptr,
-                    ret_dev_raw.begin(), EqualToZero());
-    thrust::transform(ret_dev_raw.begin(), ret_dev_raw.end(), ret_dev.begin(),
-                      TupleToVec3());
-    thrust::copy(ret_dev.begin(), ret_dev.end(), ret.begin());
-  }
-
-  auto removed = xyz + x.GetSize() -
-                 thrust::remove_if(xyz, xyz + x.GetSize(), should_stay_dev_ptr,
-                                   EqualToZero());
-  if (removed) {
-    x.PopBack(removed);
-    y.PopBack(removed);
-    z.PopBack(removed);
-  }
+  thrust::remove_if(xyz, xyz + kd_size, should_stay_dev_ptr, EqualToZero());
   cudaFree(dshould_stay);
-
-  cudaGraphicsUnmapResources(1, &query_res);
-  cudaGraphicsUnmapResources(1, &z_res);
-  cudaGraphicsUnmapResources(1, &y_res);
-  cudaGraphicsUnmapResources(1, &x_res);
 
   return ret;
 }
