@@ -11,8 +11,6 @@
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/sort.h>
 
-#include <iterator>
-
 #include "../util/cudaCheckError.hpp"
 
 namespace Sculptor {
@@ -176,6 +174,7 @@ FIND_PROC : {
 }
 RETURN : {
   if (stack_top > 0) {
+    __syncthreads();
     if (threadIdx.x == 0)
       --stack_top;
     goto FIND_PROC;
@@ -216,23 +215,40 @@ std::vector<glm::vec3> KdTreeGPU::RemoveNearest(float* x,
   int iteration = 0;
   int excess = query_points_size % (kThreads * kBlocks);
   int max = query_points_size - excess;
-  for (; iteration < max; iteration += kThreads * kBlocks)
-    FindToRemoveKernel<<<kBlocks, kThreads>>>(x, y, z, kd_size,
-                                              query_points + 3 * iteration,
-                                              dshould_stay, threshold);
-  if (excess > kThreads)
-    FindToRemoveKernel<<<excess / kThreads, kThreads>>>(
+  std::vector<cudaStream_t> streams;
+  streams.reserve((max / (kThreads * kBlocks) + (excess >= kThreads) +
+                   ((excess % kThreads) > 0)));
+  for (; iteration < max; iteration += kThreads * kBlocks) {
+    cudaStream_t stream;
+    SculptorCudaCheckError(cudaStreamCreate(&stream));
+    FindToRemoveKernel<<<kBlocks, kThreads, 0, stream>>>(
         x, y, z, kd_size, query_points + 3 * iteration, dshould_stay,
         threshold);
+    streams.emplace_back(stream);
+  }
+  if (excess >= kThreads) {
+    cudaStream_t stream;
+    SculptorCudaCheckError(cudaStreamCreate(&stream));
+    FindToRemoveKernel<<<excess / kThreads, kThreads, 0, stream>>>(
+        x, y, z, kd_size, query_points + 3 * iteration, dshould_stay,
+        threshold);
+    streams.emplace_back(stream);
+  }
   iteration += (excess / kThreads) * kThreads;
   excess %= kThreads;
-  if (excess > 0)
-    FindToRemoveKernel<<<1, excess>>>(x, y, z, kd_size,
-                                      query_points + 3 * iteration,
-                                      dshould_stay, threshold);
-
-  cudaDeviceSynchronize();
-  SculptorCudaCheckError(cudaGetLastError());
+  if (excess > 0) {
+    cudaStream_t stream;
+    SculptorCudaCheckError(cudaStreamCreate(&stream));
+    FindToRemoveKernel<<<1, excess, 0, stream>>>(x, y, z, kd_size,
+                                                 query_points + 3 * iteration,
+                                                 dshould_stay, threshold);
+    streams.emplace_back(stream);
+  }
+  for (auto const& stream : streams) {
+    SculptorCudaCheckError(cudaStreamSynchronize(stream));
+    SculptorCudaCheckError(cudaStreamDestroy(stream));
+  }
+  streams.clear();
 
   thrust::device_ptr<int> should_stay_dev_ptr(dshould_stay);
   auto xyz = thrust::make_zip_iterator(thrust::make_tuple(
