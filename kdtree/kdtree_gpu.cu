@@ -216,8 +216,7 @@ std::vector<glm::vec3> KdTreeGPU::RemoveNearest(float* x,
   int excess = query_points_size % (kThreads * kBlocks);
   int max = query_points_size - excess;
   std::vector<cudaStream_t> streams;
-  streams.reserve((max / (kThreads * kBlocks) + (excess >= kThreads) +
-                   ((excess % kThreads) > 0)));
+  streams.reserve((max / (kThreads * kBlocks) + 2));
   for (; iteration < max; iteration += kThreads * kBlocks) {
     cudaStream_t stream;
     SculptorCudaCheckError(cudaStreamCreate(&stream));
