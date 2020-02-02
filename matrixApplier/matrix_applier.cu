@@ -55,7 +55,7 @@ __global__ void ApplyKernel(float* x, float* y, float* z, int offset) {
 }
 
 template <typename OffsetCalculator, typename... Args>
-void Launch(int datasize, OffsetCalculator offset_calculator, Args... args) {
+void Launch(int datasize, OffsetCalculator offset_calculator, Args&&... args) {
   int excess = datasize % (kThreads * kBlocks);
   int max = datasize - excess;
   int iteration = 0;
