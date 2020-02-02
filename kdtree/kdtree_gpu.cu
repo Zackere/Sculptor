@@ -147,7 +147,7 @@ FIND_PROC : {
       }
       goto FIND_PROC;
     case 1:
-      if (__syncthreads_or(diff < kEps && -diff < cur_best_dist)) {
+      if (__syncthreads_or(diff < kEps)) {
         if (threadIdx.x == 0) {
           stack[stack_top].end = mid;
           stack[stack_top].misc.level = stack[stack_top].misc.level == 2
@@ -159,7 +159,7 @@ FIND_PROC : {
       }
       goto RETURN;
     case -1:
-      if (__syncthreads_or(diff > -kEps && diff < cur_best_dist)) {
+      if (__syncthreads_or(diff > -kEps)) {
         if (threadIdx.x == 0) {
           stack[stack_top].begin = mid + 1;
           stack[stack_top].misc.level = stack[stack_top].misc.level == 2
