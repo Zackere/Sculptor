@@ -10,9 +10,11 @@ in float offset_z;
 uniform mat4 mvp;
 
 out vec2 UV;
+out vec3 normal;
 
 void main(){
     gl_Position = mvp * vec4(vertexPosition_modelspace + vec3(offset_x, offset_y, offset_z), 1);
     UV = vertexUV;
+    normal = normal_vector;
 }
 
