@@ -1,4 +1,4 @@
-#include "kdtree_gpu.hpp"
+#include "kdtree_gpu_remover.hpp"
 // clang-format on
 
 #include <cuda.h>
@@ -6,10 +6,15 @@
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
 #include <device_launch_parameters.h>
+#include <thrust/copy.h>
+#include <thrust/device_ptr.h>
 #include <thrust/device_vector.h>
-#include <thrust/functional.h>
+#include <thrust/fill.h>
 #include <thrust/iterator/zip_iterator.h>
-#include <thrust/sort.h>
+#include <thrust/reduce.h>
+#include <thrust/remove.h>
+#include <thrust/transform.h>
+#include <thrust/tuple.h>
 
 #include "../util/cudaCheckError.hpp"
 
@@ -20,14 +25,6 @@ constexpr int kBlocks = 16;
 constexpr int kStackDepth = 32;
 constexpr float kEps = 0.001f;
 
-struct ScaleFunctor {
-  __host__ __device__ int operator()(float x) { return scaling_factor * x; }
-  __host__ __device__ float operator()(int x) { return descaling_factor * x; }
-
- private:
-  const int scaling_factor = 2048;
-  const float descaling_factor = 1.f / scaling_factor;
-};
 struct EqualToZero {
   __host__ __device__ bool operator()(const int x) { return x == 0; }
 };
@@ -46,27 +43,11 @@ struct alignas(int) StackEntry {
   } misc;
 };
 
-void ConstructRecursive(thrust::device_vector<int>& x,
-                        thrust::device_vector<int>& y,
-                        thrust::device_vector<int>& z,
-                        int begin,
-                        int end) {
-  if (end <= begin)
-    return;
-  auto mid = begin + (end - begin) / 2;
-  auto zip =
-      thrust::make_zip_iterator(thrust::make_tuple(y.begin(), z.begin()));
-  thrust::sort_by_key(thrust::device, x.begin() + begin, x.begin() + end,
-                      zip + begin);
-  ConstructRecursive(y, z, x, begin, mid);
-  ConstructRecursive(y, z, x, mid + 1, end);
-}
-
 __host__ __device__ __forceinline__ float dist2(float3 v,
                                                 float x,
                                                 float y,
                                                 float z) {
-  return thrust::max(abs(v.x - x), thrust::max(abs(v.y - y), abs(v.z - z)));
+  return fmaxf(abs(v.x - x), fmaxf(abs(v.y - y), abs(v.z - z)));
 }
 
 __global__ void FindToRemoveKernel(float const* const kd_x,
@@ -185,27 +166,14 @@ RETURN : {
 }
 }  // namespace
 
-void KdTreeGPU::Construct(float* x, float* y, float* z, int size) {
-  thrust::device_vector<int> x_int(size), y_int(size), z_int(size);
-
-  thrust::transform(x, x + size, x_int.begin(), ScaleFunctor());
-  thrust::transform(y, y + size, y_int.begin(), ScaleFunctor());
-  thrust::transform(z, z + size, z_int.begin(), ScaleFunctor());
-
-  ConstructRecursive(x_int, y_int, z_int, 0, size);
-
-  thrust::transform(x_int.begin(), x_int.end(), x, ScaleFunctor());
-  thrust::transform(y_int.begin(), y_int.end(), y, ScaleFunctor());
-  thrust::transform(z_int.begin(), z_int.end(), z, ScaleFunctor());
-}
-
-std::vector<glm::vec3> KdTreeGPU::RemoveNearest(float* x,
-                                                float* y,
-                                                float* z,
-                                                int kd_size,
-                                                float* query_points,
-                                                int query_points_size,
-                                                float threshold) {
+std::vector<glm::vec3> KdTreeGPURemoverHeurestic::RemoveNearest(
+    float* x,
+    float* y,
+    float* z,
+    int kd_size,
+    float* query_points,
+    int query_points_size,
+    float threshold) {
   int* dshould_stay;
   SculptorCudaCheckError(cudaMalloc(reinterpret_cast<void**>(&dshould_stay),
                                     sizeof(int) * kd_size));

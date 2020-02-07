@@ -4,15 +4,12 @@
 #include <vector>
 
 #include "../cudaGraphics/cudaGraphicsResource/cuda_graphics_resource.hpp"
-#include "kdtree.hpp"
+#include "kdtree_remover_base.hpp"
 
 namespace Sculptor {
-class KdTreeGPU : public KdTreeConstructor::Algorithm,
-                  public KdTreeRemover::Algorithm {
+class KdTreeGPURemoverHeurestic : public KdTreeRemover::Algorithm {
  public:
-  virtual ~KdTreeGPU() = default;
-
-  void Construct(float* x, float* y, float* z, int size) override;
+  virtual ~KdTreeGPURemoverHeurestic() = default;
 
   std::vector<glm::vec3> RemoveNearest(float* x,
                                        float* y,

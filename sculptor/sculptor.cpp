@@ -11,8 +11,8 @@
 
 #include "../drill/drill.hpp"
 #include "../glObject/gl_object.hpp"
-#include "../kdtree/kdtree_cpu.hpp"
-#include "../kdtree/kdtree_gpu.hpp"
+#include "../kdtree_constructor/kdtree_cpu_std_constructor.hpp"
+#include "../kdtree_remover/kdtree_gpu_remover.hpp"
 #include "../matrixApplier/matrix_applier.hpp"
 #include "../modelProvider/obj_provider.hpp"
 #include "../sculptingMaterial/cube_sculpting_material.hpp"
@@ -66,8 +66,10 @@ int Sculptor::Main() {
 
   CubeSculptingMaterial material(
       ncubes, std::move(cube), std::make_unique<MatrixApplier>(),
-      std::make_unique<KdTreeConstructor>(std::make_unique<KdTreeCPU>()),
-      std::make_unique<KdTreeRemover>(std::make_unique<KdTreeGPU>()));
+      std::make_unique<KdTreeConstructor>(
+          std::make_unique<KdTreeCPUStdConstructor>()),
+      std::make_unique<KdTreeRemover>(
+          std::make_unique<KdTreeGPURemoverHeurestic>()));
 
   std::unique_ptr<glObject> drill_model = std::make_unique<glObject>(
       std::make_unique<ObjProvider>(base + "model/drill.obj"),

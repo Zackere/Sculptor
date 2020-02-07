@@ -1,7 +1,6 @@
-#include "kdtree_cpu.hpp"
+#include "kdtree_cpu_remover.hpp"
 
 #include <cuda.h>
-#include <cuda_gl_interop.h>
 
 #include <algorithm>
 #include <execution>
@@ -14,56 +13,14 @@
 namespace Sculptor {
 namespace {
 constexpr float kEps = 0.001f;
-
-template <typename RandomIt>
-void ConstructRecursive(RandomIt begin, RandomIt end, int level) {
-  if (end <= begin)
-    return;
-  std::sort(std::execution::par, begin, end,
-            [level](auto const& v1, auto const& v2) {
-              return reinterpret_cast<float const*>(&v1)[level] <
-                     reinterpret_cast<float const*>(&v2)[level];
-            });
-  level = level == 2 ? 0 : (level + 1);
-  auto mid = begin + (end - begin) / 2;
-  ConstructRecursive(begin, mid, level);
-  ConstructRecursive(mid + 1, end, level);
-}
 }  // namespace
-void KdTreeCPU::Construct(float* x, float* y, float* z, int size) {
-  std::vector<float> kd_x(size), kd_y(size), kd_z(size);
-  SculptorCudaCheckError(
-      cudaMemcpy(kd_x.data(), x, size * sizeof(float), cudaMemcpyDeviceToHost));
-  SculptorCudaCheckError(
-      cudaMemcpy(kd_y.data(), y, size * sizeof(float), cudaMemcpyDeviceToHost));
-  SculptorCudaCheckError(
-      cudaMemcpy(kd_z.data(), z, size * sizeof(float), cudaMemcpyDeviceToHost));
-
-  std::vector<glm::vec3> kd(size);
-  for (auto i = 0u; i < kd.size(); ++i)
-    kd[i] = {kd_x[i], kd_y[i], kd_z[i]};
-  ConstructRecursive(kd.begin(), kd.end(), 0);
-  for (auto i = 0u; i < kd.size(); ++i) {
-    kd_x[i] = kd[i].x;
-    kd_y[i] = kd[i].y;
-    kd_z[i] = kd[i].z;
-  }
-
-  SculptorCudaCheckError(
-      cudaMemcpy(x, kd_x.data(), size * sizeof(float), cudaMemcpyHostToDevice));
-  SculptorCudaCheckError(
-      cudaMemcpy(y, kd_y.data(), size * sizeof(float), cudaMemcpyHostToDevice));
-  SculptorCudaCheckError(
-      cudaMemcpy(z, kd_z.data(), size * sizeof(float), cudaMemcpyHostToDevice));
-}
-
-std::vector<glm::vec3> KdTreeCPU::RemoveNearest(float* x,
-                                                float* y,
-                                                float* z,
-                                                int kd_size,
-                                                float* query_points,
-                                                int query_points_size,
-                                                float threshold) {
+std::vector<glm::vec3> KdTreeCPURemover::RemoveNearest(float* x,
+                                                       float* y,
+                                                       float* z,
+                                                       int kd_size,
+                                                       float* query_points,
+                                                       int query_points_size,
+                                                       float threshold) {
   std::vector<float> kd_x(kd_size), kd_y(kd_size), kd_z(kd_size);
   SculptorCudaCheckError(cudaMemcpy(kd_x.data(), x, kd_size * sizeof(float),
                                     cudaMemcpyDeviceToHost));
@@ -113,9 +70,10 @@ std::vector<glm::vec3> KdTreeCPU::RemoveNearest(float* x,
   return ret;
 }
 
-void KdTreeCPU::FindNearestRecursive(std::vector<glm::vec3>::iterator begin,
-                                     std::vector<glm::vec3>::iterator end,
-                                     int level) {
+void KdTreeCPURemover::FindNearestRecursive(
+    std::vector<glm::vec3>::iterator begin,
+    std::vector<glm::vec3>::iterator end,
+    int level) {
   if (end <= begin)
     return;
   auto mid = begin + (end - begin) / 2;
