@@ -1,3 +1,5 @@
+// Copyright 2020 Wojciech Replin. All rights reserved.
+
 #include "cube_sculpting_material.hpp"
 
 #include <glm/gtc/matrix_transform.hpp>

@@ -1,3 +1,5 @@
+// Copyright 2020 Wojciech Replin. All rights reserved.
+
 #pragma once
 
 #include <glm/glm.hpp>
@@ -12,13 +14,5 @@ class KdTreeGPUThrustConstructor : public KdTreeConstructor::Algorithm {
   virtual ~KdTreeGPUThrustConstructor() = default;
 
   void Construct(float* x, float* y, float* z, int size) override;
-
-  // std::vector<glm::vec3> RemoveNearest(float* x,
-  //                                      float* y,
-  //                                      float* z,
-  //                                      int kd_size,
-  //                                      float* query_points,
-  //                                      int query_points_size,
-  //                                      float threshold) override;
 };
 }  // namespace Sculptor

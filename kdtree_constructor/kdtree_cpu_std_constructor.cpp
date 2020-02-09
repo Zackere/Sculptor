@@ -1,3 +1,5 @@
+// Copyright 2020 Wojciech Replin. All rights reserved.
+
 #include "kdtree_cpu_std_constructor.hpp"
 
 #include <cuda.h>

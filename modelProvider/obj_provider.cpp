@@ -1,3 +1,5 @@
+// Copyright 2020 Wojciech Replin. All rights reserved.
+
 #include "obj_provider.hpp"
 
 #include <cstring>

@@ -1,3 +1,5 @@
+// Copyright 2020 Wojciech Replin. All rights reserved.
+
 #include "kdtree_constructor_base.hpp"
 
 #include "../util/cudaCheckError.hpp"

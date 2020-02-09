@@ -1,3 +1,5 @@
+// Copyright 2020 Wojciech Replin. All rights reserved.
+
 #pragma once
 
 #include <cuda_runtime.h>

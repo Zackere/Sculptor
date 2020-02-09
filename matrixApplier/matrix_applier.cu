@@ -1,3 +1,5 @@
+// Copyright 2020 Wojciech Replin. All rights reserved.
+
 #include "matrix_applier.hpp"
 // clang-format on
 

@@ -1,3 +1,5 @@
+// Copyright 2020 Wojciech Replin. All rights reserved.
+
 #include "gl_instanced_object.hpp"
 
 #include <utility>

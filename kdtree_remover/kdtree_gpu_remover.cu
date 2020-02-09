@@ -1,3 +1,5 @@
+// Copyright 2020 Wojciech Replin. All rights reserved.
+
 #include "kdtree_gpu_remover.hpp"
 // clang-format on
 

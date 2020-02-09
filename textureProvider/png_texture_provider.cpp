@@ -1,3 +1,5 @@
+// Copyright 2020 Wojciech Replin. All rights reserved.
+
 #include "png_texture_provider.hpp"
 
 #include <iostream>

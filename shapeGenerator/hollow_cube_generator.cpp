@@ -1,3 +1,5 @@
+// Copyright 2020 Wojciech Replin. All rights reserved.
+
 #include "hollow_cube_generator.hpp"
 
 namespace Sculptor {

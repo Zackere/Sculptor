@@ -1,3 +1,5 @@
+// Copyright 2020 Wojciech Replin. All rights reserved.
+
 #include "kdtree_gpu_thrust_constructor.hpp"
 // clang-format on
 
