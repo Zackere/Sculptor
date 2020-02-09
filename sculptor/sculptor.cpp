@@ -22,6 +22,14 @@
 #include "../textureProvider/png_texture_provider.hpp"
 
 namespace Sculptor {
+namespace {
+float wWidth = 2 * 1280.f, wHeight = 2 * 960.f;
+float aspect = wWidth / wHeight;
+void OnResize(GLFWwindow*, int width, int height) {
+  glViewport(0, 0, wWidth = width, wHeight = height);
+  aspect = wWidth / wHeight;
+}
+}  // namespace
 Sculptor::Sculptor() {
   glfwInit();
 }
@@ -32,7 +40,6 @@ Sculptor::~Sculptor() {
 
 int Sculptor::Main() {
   GLFWwindow* window;
-  constexpr auto wWidth = 2 * 1280.f, wHeight = 2 * 960.f;
   window = glfwCreateWindow(static_cast<int>(wWidth), static_cast<int>(wHeight),
                             "Sculptor", nullptr, nullptr);
   if (!window)
@@ -41,16 +48,13 @@ int Sculptor::Main() {
   glfwMakeContextCurrent(window);
   if (glewInit() != GLEW_OK)
     return -1;
+  glfwSetWindowSizeCallback(window, OnResize);
+
+  glViewport(0, 0, wWidth, wHeight);
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LESS);
   glEnable(GL_CULL_FACE);
   glCullFace(GL_BACK);
-
-  glm::mat4 projection = glm::perspective(
-      glm::radians(45.0f), static_cast<float>(wWidth) / wHeight, 0.1f, 10.0f);
-  glm::mat4 view =
-      glm::lookAt(glm::vec3(3, 1.5, 3), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
-  auto vp = projection * view;
 
   glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
   glClearColor(44.0f / 255.0f, 219.0f / 255.0f, 216.0f / 255.0f, 0.0f);
@@ -83,6 +87,8 @@ int Sculptor::Main() {
   Drill drill(std::move(drill_model));
 
   do {
+    glfwPollEvents();
+
     if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
       material.Rotate(-0.01f);
     else if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
@@ -96,6 +102,12 @@ int Sculptor::Main() {
     else if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
       drill.MoveDown();
 
+    glm::mat4 projection =
+        glm::perspective(glm::radians(45.0f), aspect, 0.1f, 10.0f);
+    glm::mat4 view = glm::lookAt(glm::vec3(3, 1.5, 3), glm::vec3(0, 0, 0),
+                                 glm::vec3(0, 1, 0));
+    auto vp = projection * view;
+
     drill.Spin();
     material.Collide(drill.GetObject());
 
@@ -104,7 +116,6 @@ int Sculptor::Main() {
     material.Render(vp);
     drill.Render(vp);
     glfwSwapBuffers(window);
-    glfwPollEvents();
   } while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS &&
            glfwWindowShouldClose(window) == 0);
   return 0;
