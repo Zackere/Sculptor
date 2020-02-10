@@ -97,9 +97,9 @@ int Sculptor::Main() {
       glm::scale(glm::mat4(1.f), glm::vec3(0.02, 0.02, 0.02)));
   Drill drill(std::move(drill_model));
 
-  BasicCamera basic_camera({3, 1.5, 3}, {0, 0, 0}, {0, 1, 0});
+  BasicCamera static_camera({3, 1.5, 3}, {0, 0, 0}, {0, 1, 0});
   FollowerCamera follower_camera({3, 1.5, 3}, &drill.GetObject(), {0, 1, 0});
-  Camera* active_camera = &follower_camera;
+  Camera* active_camera = &static_camera;
 
   double old_mouse_pos_x, old_mouse_pos_y, cur_mouse_pos_x, cur_mouse_pos_y;
   glfwGetCursorPos(window, &cur_mouse_pos_x, &cur_mouse_pos_y);
@@ -113,6 +113,10 @@ int Sculptor::Main() {
       material.Rotate(-0.01f);
     else if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
       material.Rotate(0.01f);
+    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+      active_camera->Zoom(0.1f);
+    else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+      active_camera->Zoom(-0.1f);
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
       drill.MoveForward();
     else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)

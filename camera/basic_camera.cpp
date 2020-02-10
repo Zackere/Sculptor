@@ -31,8 +31,8 @@ void BasicCamera::SetPos(glm::vec3 const& pos) {
   pos_ = pos;
 }
 
-void BasicCamera::Move(glm::vec3 const& direction) {
-  pos_ += direction;
+void BasicCamera::Zoom(float amount) {
+  pos_ += glm::normalize(target_ - pos_) * amount;
 }
 
 void BasicCamera::Rotate(glm::vec2 const& direction) {

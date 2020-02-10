@@ -21,7 +21,7 @@ class FollowerCamera : public Camera {
   glm::mat4 GetTransform() override;
   void LookAt(glObject* object);
   void SetPos(glm::vec3 const& pos) override;
-  void Move(glm::vec3 const& direction) override;
+  void Zoom(float amount) override;
   void Rotate(glm::vec2 const& direction) override;
 
  private:

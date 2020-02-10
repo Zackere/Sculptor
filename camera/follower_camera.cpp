@@ -31,8 +31,9 @@ void FollowerCamera::SetPos(glm::vec3 const& pos) {
   basic_camera_->SetPos(pos);
 }
 
-void FollowerCamera::Move(glm::vec3 const& direction) {
-  basic_camera_->Move(direction);
+void FollowerCamera::Zoom(float amount) {
+  basic_camera_->LookAt(target_->GetAvgPosition());
+  basic_camera_->Zoom(amount);
 }
 
 void FollowerCamera::Rotate(glm::vec2 const& direction) {
