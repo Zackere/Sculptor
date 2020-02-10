@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <thrust/device_vector.h>
 
+#include <algorithm>
 #include <utility>
 
 #include "../util/cudaCheckError.hpp"

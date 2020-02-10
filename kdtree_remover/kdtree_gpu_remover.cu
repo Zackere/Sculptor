@@ -18,6 +18,8 @@
 #include <thrust/transform.h>
 #include <thrust/tuple.h>
 
+#include <algorithm>
+
 #include "../util/cudaCheckError.hpp"
 
 namespace Sculptor {

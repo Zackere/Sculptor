@@ -13,7 +13,7 @@ class HollowCubeGenerator;
 
 class CubeGenerator : public ShapeGeneratorBase {
  public:
-  CubeGenerator(std::unique_ptr<HollowCubeGenerator> hollow_cube_gen);
+  explicit CubeGenerator(std::unique_ptr<HollowCubeGenerator> hollow_cube_gen);
   ~CubeGenerator() override;
   std::vector<glm::vec3> Generate(int ncubes_on_side) override;
   int GetNumberOfOutputs(int ncubes_on_side) override {

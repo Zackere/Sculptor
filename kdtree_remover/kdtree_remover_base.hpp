@@ -23,7 +23,7 @@ class KdTreeRemover {
                                                  int query_points_size,
                                                  float threshold) = 0;
   };
-  KdTreeRemover(std::unique_ptr<Algorithm> alg)
+  explicit KdTreeRemover(std::unique_ptr<Algorithm> alg)
       : remove_algorithm_(std::move(alg)) {}
 
   std::vector<glm::vec3> RemoveNearest(

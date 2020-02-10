@@ -12,7 +12,7 @@
 namespace Sculptor {
 class ObjProvider : public ModelProviderBase {
  public:
-  ObjProvider(std::string_view path) : path_(path) {}
+  explicit ObjProvider(std::string_view path) : path_(path) {}
   ~ObjProvider() override = default;
 
   bool Get(std::vector<glm::vec3>& out_vertices,

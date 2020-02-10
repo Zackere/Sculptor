@@ -16,7 +16,7 @@ class KdTreeConstructor {
     virtual ~Algorithm() = default;
     virtual void Construct(float* x, float* y, float* z, int size) = 0;
   };
-  KdTreeConstructor(std::unique_ptr<Algorithm> alg)
+  explicit KdTreeConstructor(std::unique_ptr<Algorithm> alg)
       : construction_algorithm_(std::move(alg)) {}
 
   void Construct(CudaGraphicsResource<float>& x,

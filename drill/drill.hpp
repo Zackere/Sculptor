@@ -12,7 +12,7 @@ class glObject;
 
 class Drill {
  public:
-  Drill(std::unique_ptr<glObject> model);
+  explicit Drill(std::unique_ptr<glObject> model);
   ~Drill();
 
   void Render(glm::mat4 const& vp);

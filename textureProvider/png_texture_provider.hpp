@@ -12,7 +12,7 @@
 namespace Sculptor {
 class PNGTextureProvider : public TextureProviderBase {
  public:
-  PNGTextureProvider(std::string_view path) : path_(path) {}
+  explicit PNGTextureProvider(std::string_view path) : path_(path) {}
   ~PNGTextureProvider() override = default;
   GLuint Get() override;
 

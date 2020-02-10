@@ -12,6 +12,7 @@
 #include <utility>
 
 #include "../camera/basic_camera.hpp"
+#include "../camera/follower_camera.hpp"
 #include "../drill/drill.hpp"
 #include "../glObject/gl_object.hpp"
 #include "../kdtree_constructor/kdtree_cpu_std_constructor.hpp"
@@ -97,7 +98,8 @@ int Sculptor::Main() {
   Drill drill(std::move(drill_model));
 
   BasicCamera basic_camera({3, 1.5, 3}, {0, 0, 0}, {0, 1, 0});
-  Camera* active_camera = &basic_camera;
+  FollowerCamera follower_camera({3, 1.5, 3}, &drill.GetObject(), {0, 1, 0});
+  Camera* active_camera = &follower_camera;
 
   double old_mouse_pos_x, old_mouse_pos_y, cur_mouse_pos_x, cur_mouse_pos_y;
   glfwGetCursorPos(window, &cur_mouse_pos_x, &cur_mouse_pos_y);
@@ -129,7 +131,7 @@ int Sculptor::Main() {
 
     glm::mat4 projection = glm::perspective(
         glm::radians(45.0f), window_properties.aspect, 0.1f, 10.0f);
-    auto vp = projection * basic_camera.GetTransform();
+    auto vp = projection * active_camera->GetTransform();
 
     drill.Spin();
     material.Collide(drill.GetObject());

@@ -13,7 +13,7 @@ namespace Sculptor {
 template <typename ContentType>
 class CudaGraphicsResource {
  public:
-  CudaGraphicsResource(size_t capacity);
+  explicit CudaGraphicsResource(size_t capacity);
   ~CudaGraphicsResource();
 
   auto GetGLBuffer() { return gl_buffer_; }
