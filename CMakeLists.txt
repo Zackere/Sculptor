@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.12)
 project(Sculptor LANGUAGES CXX)
-set(CMAKE_CXX_CLANG_TIDY clang-tidy -checks=-*,cert-*,cppcoreguidelines-*,clang-analyzer-*,performance-*,modernize-*,bugprone-*)
-set(CMAKE_CXX_CPPLINT "cpplint")
+# set(CMAKE_CXX_CLANG_TIDY clang-tidy -checks=-*,cert-*,cppcoreguidelines-*,clang-analyzer-*,performance-*,modernize-*,bugprone-*)
+# set(CMAKE_CXX_CPPLINT "cpplint")
 
 file(GLOB source_files
     ${CMAKE_SOURCE_DIR}/*/*.cpp

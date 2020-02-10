@@ -11,6 +11,7 @@
 #include <string>
 #include <utility>
 
+#include "../camera/basic_camera.hpp"
 #include "../drill/drill.hpp"
 #include "../glObject/gl_object.hpp"
 #include "../kdtree_constructor/kdtree_cpu_std_constructor.hpp"
@@ -23,12 +24,17 @@
 
 namespace Sculptor {
 namespace {
-float wWidth = 2 * 1280.f, wHeight = 2 * 960.f;
-float aspect = wWidth / wHeight;
+struct {
+  float width = 2 * 1280.f, height = 2 * 960.f;
+  float aspect = width / height;
+} window_properties;
 void OnResize(GLFWwindow*, int width, int height) {
-  glViewport(0, 0, wWidth = width, wHeight = height);
-  aspect = wWidth / wHeight;
+  glViewport(0, 0, window_properties.width = width,
+             window_properties.height = height);
+  window_properties.aspect = window_properties.width / window_properties.height;
 }
+
+bool main_running = false;
 }  // namespace
 Sculptor::Sculptor() {
   glfwInit();
@@ -39,8 +45,12 @@ Sculptor::~Sculptor() {
 }
 
 int Sculptor::Main() {
+  if (main_running)
+    return -1;
+  main_running = true;
+
   GLFWwindow* window;
-  window = glfwCreateWindow(static_cast<int>(wWidth), static_cast<int>(wHeight),
+  window = glfwCreateWindow(window_properties.width, window_properties.height,
                             "Sculptor", nullptr, nullptr);
   if (!window)
     return -1;
@@ -50,7 +60,7 @@ int Sculptor::Main() {
     return -1;
   glfwSetWindowSizeCallback(window, OnResize);
 
-  glViewport(0, 0, wWidth, wHeight);
+  glViewport(0, 0, window_properties.width, window_properties.height);
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LESS);
   glEnable(GL_CULL_FACE);
@@ -86,6 +96,14 @@ int Sculptor::Main() {
       glm::scale(glm::mat4(1.f), glm::vec3(0.02, 0.02, 0.02)));
   Drill drill(std::move(drill_model));
 
+  BasicCamera basic_camera({3, 1.5, 3}, {0, 0, 0}, {0, 1, 0});
+  Camera* active_camera = &basic_camera;
+
+  double old_mouse_pos_x, old_mouse_pos_y, cur_mouse_pos_x, cur_mouse_pos_y;
+  glfwGetCursorPos(window, &cur_mouse_pos_x, &cur_mouse_pos_y);
+  old_mouse_pos_x = cur_mouse_pos_x;
+  old_mouse_pos_y = cur_mouse_pos_y;
+
   do {
     glfwPollEvents();
 
@@ -102,11 +120,16 @@ int Sculptor::Main() {
     else if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
       drill.MoveDown();
 
-    glm::mat4 projection =
-        glm::perspective(glm::radians(45.0f), aspect, 0.1f, 10.0f);
-    glm::mat4 view = glm::lookAt(glm::vec3(3, 1.5, 3), glm::vec3(0, 0, 0),
-                                 glm::vec3(0, 1, 0));
-    auto vp = projection * view;
+    glfwGetCursorPos(window, &cur_mouse_pos_x, &cur_mouse_pos_y);
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+      active_camera->Rotate({cur_mouse_pos_x - old_mouse_pos_x,
+                             cur_mouse_pos_y - old_mouse_pos_y});
+    old_mouse_pos_x = cur_mouse_pos_x;
+    old_mouse_pos_y = cur_mouse_pos_y;
+
+    glm::mat4 projection = glm::perspective(
+        glm::radians(45.0f), window_properties.aspect, 0.1f, 10.0f);
+    auto vp = projection * basic_camera.GetTransform();
 
     drill.Spin();
     material.Collide(drill.GetObject());
@@ -118,6 +141,8 @@ int Sculptor::Main() {
     glfwSwapBuffers(window);
   } while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS &&
            glfwWindowShouldClose(window) == 0);
+
+  main_running = false;
   return 0;
 }
 }  // namespace Sculptor
