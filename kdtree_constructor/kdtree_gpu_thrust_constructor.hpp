@@ -11,7 +11,7 @@
 namespace Sculptor {
 class KdTreeGPUThrustConstructor : public KdTreeConstructor::Algorithm {
  public:
-  virtual ~KdTreeGPUThrustConstructor() = default;
+  ~KdTreeGPUThrustConstructor() override = default;
 
   void Construct(float* x, float* y, float* z, int size) override;
 };

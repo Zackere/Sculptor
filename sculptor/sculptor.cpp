@@ -13,6 +13,7 @@
 
 #include "../camera/basic_camera.hpp"
 #include "../camera/follower_camera.hpp"
+#include "../camera/third_person_camera.hpp"
 #include "../drill/drill.hpp"
 #include "../glObject/gl_object.hpp"
 #include "../kdtree_constructor/kdtree_cpu_std_constructor.hpp"
@@ -25,6 +26,8 @@
 
 namespace Sculptor {
 namespace {
+bool main_running = false;
+const glm::vec3 kUp{0.f, 1.f, 0.f};
 struct {
   float width = 2 * 1280.f, height = 2 * 960.f;
   float aspect = width / height;
@@ -34,8 +37,6 @@ void OnResize(GLFWwindow*, int width, int height) {
              window_properties.height = height);
   window_properties.aspect = window_properties.width / window_properties.height;
 }
-
-bool main_running = false;
 }  // namespace
 Sculptor::Sculptor() {
   glfwInit();
@@ -60,6 +61,9 @@ int Sculptor::Main() {
   if (glewInit() != GLEW_OK)
     return -1;
   glfwSetWindowSizeCallback(window, OnResize);
+  const auto is_key_pressed = [window](int key) {
+    return glfwGetKey(window, key) == GLFW_PRESS;
+  };
 
   glViewport(0, 0, window_properties.width, window_properties.height);
   glEnable(GL_DEPTH_TEST);
@@ -97,8 +101,9 @@ int Sculptor::Main() {
       glm::scale(glm::mat4(1.f), glm::vec3(0.02, 0.02, 0.02)));
   Drill drill(std::move(drill_model));
 
-  BasicCamera static_camera({3, 1.5, 3}, {0, 0, 0}, {0, 1, 0});
-  FollowerCamera follower_camera({3, 1.5, 3}, &drill.GetObject(), {0, 1, 0});
+  BasicCamera static_camera({3, 1.5, 3}, {0, 0, 0}, kUp);
+  FollowerCamera follower_camera({3, 1.5, 3}, &drill.GetObject(), kUp);
+  ThirdPersonCamera thrid_person_camera({0.6, 0.2, 0}, &drill.GetObject(), kUp);
   Camera* active_camera = &static_camera;
 
   double old_mouse_pos_x, old_mouse_pos_y, cur_mouse_pos_x, cur_mouse_pos_y;
@@ -109,22 +114,28 @@ int Sculptor::Main() {
   do {
     glfwPollEvents();
 
-    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+    if (is_key_pressed(GLFW_KEY_LEFT))
       material.Rotate(-0.01f);
-    else if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+    else if (is_key_pressed(GLFW_KEY_RIGHT))
       material.Rotate(0.01f);
-    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+    if (is_key_pressed(GLFW_KEY_UP))
       active_camera->Zoom(0.1f);
-    else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+    else if (is_key_pressed(GLFW_KEY_DOWN))
       active_camera->Zoom(-0.1f);
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+    if (is_key_pressed(GLFW_KEY_W))
       drill.MoveForward();
-    else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+    else if (is_key_pressed(GLFW_KEY_S))
       drill.MoveBackward();
-    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+    if (is_key_pressed(GLFW_KEY_E))
       drill.MoveUp();
-    else if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+    else if (is_key_pressed(GLFW_KEY_Q))
       drill.MoveDown();
+    if (is_key_pressed(GLFW_KEY_F1))
+      active_camera = &static_camera;
+    else if (is_key_pressed(GLFW_KEY_F2))
+      active_camera = &follower_camera;
+    else if (is_key_pressed(GLFW_KEY_F3))
+      active_camera = &thrid_person_camera;
 
     glfwGetCursorPos(window, &cur_mouse_pos_x, &cur_mouse_pos_y);
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)

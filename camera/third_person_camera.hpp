@@ -11,13 +11,13 @@ namespace Sculptor {
 class glObject;
 class BasicCamera;
 
-class FollowerCamera : public Camera {
+class ThirdPersonCamera : public Camera {
  public:
-  FollowerCamera(glm::vec3 const& initial_pos,
-                 glObject* target,
-                 glm::vec3 const& up);
+  ThirdPersonCamera(glm::vec3 const& initial_pos_offset,
+                    glObject* target,
+                    glm::vec3 const& up);
 
-  ~FollowerCamera() override;
+  ~ThirdPersonCamera() override;
   glm::mat4 GetTransform() override;
   void LookAt(glObject* object);
   glm::vec3 SetPos(glm::vec3 const& pos) override;
@@ -29,8 +29,9 @@ class FollowerCamera : public Camera {
 
   glObject* target_ = nullptr;
   std::unique_ptr<BasicCamera> basic_camera_ = nullptr;
+  glm::vec3 offset = {};
 
-  FollowerCamera(FollowerCamera const&) = delete;
-  FollowerCamera& operator=(FollowerCamera const&) = delete;
+  ThirdPersonCamera(ThirdPersonCamera const&) = delete;
+  ThirdPersonCamera& operator=(ThirdPersonCamera const&) = delete;
 };
 }  // namespace Sculptor

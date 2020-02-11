@@ -16,9 +16,9 @@ class BasicCamera : public Camera {
   ~BasicCamera() = default;
   glm::mat4 GetTransform() override;
   void LookAt(glm::vec3 const& pos);
-  void SetPos(glm::vec3 const& pos) override;
-  void Zoom(float amount) override;
-  void Rotate(glm::vec2 const& direction) override;
+  glm::vec3 SetPos(glm::vec3 const& pos) override;
+  glm::vec3 Zoom(float amount) override;
+  glm::vec3 Rotate(glm::vec2 const& direction) override;
 
  private:
   glm::vec3 pos_, target_, up_;

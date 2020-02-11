@@ -27,24 +27,25 @@ void BasicCamera::LookAt(glm::vec3 const& pos) {
   target_ = pos;
 }
 
-void BasicCamera::SetPos(glm::vec3 const& pos) {
-  pos_ = pos;
+glm::vec3 BasicCamera::SetPos(glm::vec3 const& pos) {
+  return pos_ = pos;
 }
 
-void BasicCamera::Zoom(float amount) {
-  pos_ += glm::normalize(target_ - pos_) * amount;
+glm::vec3 BasicCamera::Zoom(float amount) {
+  return pos_ += glm::normalize(target_ - pos_) * amount;
 }
 
-void BasicCamera::Rotate(glm::vec2 const& direction) {
-  if (direction.x * direction.x + direction.y * direction.y < 0.0001f)
-    return;
-  pos_ -= target_;
+glm::vec3 BasicCamera::Rotate(glm::vec2 const& direction) {
+  if (!(direction.x * direction.x + direction.y * direction.y < 0.0001f)) {
+    pos_ -= target_;
 
-  glm::vec3 local_right = glm::cross(pos_, up_);
-  pos_ = glm::rotate(pos_, direction.y / 300, local_right);
-  glm::vec3 local_up = glm::cross(pos_, local_right);
-  pos_ = glm::rotate(pos_, direction.x / 300, local_up);
+    glm::vec3 local_right = glm::cross(pos_, up_);
+    pos_ = glm::rotate(pos_, direction.y / 300, local_right);
+    glm::vec3 local_up = glm::cross(pos_, local_right);
+    pos_ = glm::rotate(pos_, direction.x / 300, local_up);
 
-  pos_ += target_;
+    pos_ += target_;
+  }
+  return pos_;
 }
 }  // namespace Sculptor

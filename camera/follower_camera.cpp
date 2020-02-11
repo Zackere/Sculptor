@@ -19,7 +19,7 @@ FollowerCamera::FollowerCamera(glm::vec3 const& initial_pos,
 FollowerCamera::~FollowerCamera() = default;
 
 glm::mat4 FollowerCamera::GetTransform() {
-  basic_camera_->LookAt(target_->GetAvgPosition());
+  Update();
   return basic_camera_->GetTransform();
 }
 
@@ -27,18 +27,23 @@ void FollowerCamera::LookAt(glObject* object) {
   target_ = object;
 }
 
-void FollowerCamera::SetPos(glm::vec3 const& pos) {
-  basic_camera_->SetPos(pos);
+glm::vec3 FollowerCamera::SetPos(glm::vec3 const& pos) {
+  Update();
+  return basic_camera_->SetPos(pos);
 }
 
-void FollowerCamera::Zoom(float amount) {
-  basic_camera_->LookAt(target_->GetAvgPosition());
-  basic_camera_->Zoom(amount);
+glm::vec3 FollowerCamera::Zoom(float amount) {
+  Update();
+  return basic_camera_->Zoom(amount);
 }
 
-void FollowerCamera::Rotate(glm::vec2 const& direction) {
+glm::vec3 FollowerCamera::Rotate(glm::vec2 const& direction) {
+  Update();
+  return basic_camera_->Rotate(direction);
+}
+
+void FollowerCamera::Update() {
   basic_camera_->LookAt(target_->GetAvgPosition());
-  basic_camera_->Rotate(direction);
 }
 
 }  // namespace Sculptor

@@ -11,7 +11,7 @@
 namespace Sculptor {
 class KdTreeGPURemoverHeurestic : public KdTreeRemover::Algorithm {
  public:
-  virtual ~KdTreeGPURemoverHeurestic() = default;
+  ~KdTreeGPURemoverHeurestic() override = default;
 
   std::vector<glm::vec3> RemoveNearest(float* x,
                                        float* y,
