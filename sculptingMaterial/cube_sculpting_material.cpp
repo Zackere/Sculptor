@@ -8,8 +8,8 @@
 
 #include "../glInstancedObject/gl_instanced_object.hpp"
 #include "../glObject/gl_object.hpp"
-#include "../kdtree_constructor/kdtree_constructor_base.hpp"
-#include "../kdtree_remover/kdtree_remover_base.hpp"
+#include "../kdtreeConstructor/kdtree_constructor_base.hpp"
+#include "../kdtreeRemover/kdtree_remover_base.hpp"
 #include "../matrixApplier/matrix_applier.hpp"
 #include "../shapeGenerator/shape_generator_base.hpp"
 

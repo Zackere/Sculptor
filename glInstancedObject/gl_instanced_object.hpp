@@ -14,6 +14,7 @@ namespace Sculptor {
 class MatrixApplierBase;
 class ShapeGeneratorBase;
 class glObject;
+class ShaderProgramBase;
 
 class glInstancedObject {
  public:
@@ -33,6 +34,8 @@ class glInstancedObject {
   CudaGraphicsResource<float>& GetVecticesZ() { return z_positions_buffer_; }
 
   void AddInstances(std::vector<glm::vec3> const& instances);
+
+  void SetShader(std::unique_ptr<ShaderProgramBase> shader);
 
  private:
   std::unique_ptr<glObject> reference_model_;

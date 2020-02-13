@@ -13,14 +13,14 @@
 
 namespace Sculptor {
 class ModelProviderBase;
-class ShaderProviderBase;
+class ShaderProgramBase;
 class TextureProviderBase;
 class MatrixApplierBase;
 
 class glObject {
  public:
   glObject(std::unique_ptr<ModelProviderBase> model_provider,
-           std::unique_ptr<ShaderProviderBase> shader_provider,
+           std::unique_ptr<ShaderProgramBase> shader_program,
            std::unique_ptr<MatrixApplierBase> matrix_applier,
            std::unique_ptr<TextureProviderBase> texture_provider);
   ~glObject();
@@ -29,7 +29,7 @@ class glObject {
   void Transform(glm::mat4 const& m);
   void Enable() const;
 
-  auto GetShader() const { return shader_; }
+  GLuint GetShader() const;
   auto GetTexture() const { return texture_; }
   auto GetNumberOfModelVertices() const {
     return model_parameters_.verticies->GetSize();
@@ -37,12 +37,14 @@ class glObject {
   auto GetAvgPosition() const { return average_pos_; }
   auto* GetVertices() { return model_parameters_.verticies.get(); }
 
+  void SetShader(std::unique_ptr<ShaderProgramBase> shader);
+
  private:
   struct {
     std::unique_ptr<CudaGraphicsResource<glm::vec3>> verticies, normals;
     std::unique_ptr<CudaGraphicsResource<glm::vec2>> uvs;
   } model_parameters_;
-  GLuint shader_ = 0;
+  std::unique_ptr<ShaderProgramBase> shader_;
   GLuint vao_ = 0;
   GLuint texture_ = 0;
   std::unique_ptr<MatrixApplierBase> matrix_applier_;

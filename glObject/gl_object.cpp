@@ -8,15 +8,16 @@
 
 #include "../matrixApplier/matrix_applier_base.hpp"
 #include "../modelProvider/model_provider_base.hpp"
-#include "../shaderProvider/shader_provider_base.hpp"
+#include "../shaderProgram/shader_program_base.hpp"
 #include "../textureProvider/texture_provider_base.hpp"
 
 namespace Sculptor {
 glObject::glObject(std::unique_ptr<ModelProviderBase> model_provider,
-                   std::unique_ptr<ShaderProviderBase> shader_provider,
+                   std::unique_ptr<ShaderProgramBase> shader_program,
                    std::unique_ptr<MatrixApplierBase> matrix_applier,
                    std::unique_ptr<TextureProviderBase> texture_provider)
     : model_parameters_{nullptr, nullptr, nullptr},
+      shader_(std::move(shader_program)),
       matrix_applier_(std::move(matrix_applier)) {
   glGenVertexArrays(1, &vao_);
   glBindVertexArray(vao_);
@@ -40,7 +41,6 @@ glObject::glObject(std::unique_ptr<ModelProviderBase> model_provider,
       std::make_unique<CudaGraphicsResource<glm::vec3>>(normals.size());
   model_parameters_.normals->SetData(normals.data(), normals.size());
 
-  shader_ = shader_provider->Get();
   if (texture_provider)
     texture_ = texture_provider->Get();
 
@@ -60,13 +60,21 @@ glObject::glObject(std::unique_ptr<ModelProviderBase> model_provider,
 glObject::~glObject() = default;
 
 void glObject::Enable() const {
-  glUseProgram(shader_);
+  glUseProgram(shader_->Get());
   glBindVertexArray(vao_);
+}
+
+GLuint glObject::GetShader() const {
+  return shader_->Get();
+}
+
+void glObject::SetShader(std::unique_ptr<ShaderProgramBase> shader) {
+  shader_ = std::move(shader);
 }
 
 void glObject::Render(glm::mat4 const& vp) const {
   Enable();
-  glUniformMatrix4fv(glGetUniformLocation(shader_, "mvp"), 1, GL_FALSE,
+  glUniformMatrix4fv(glGetUniformLocation(shader_->Get(), "mvp"), 1, GL_FALSE,
                      &vp[0][0]);
   glDrawArrays(GL_TRIANGLES, 0, GetNumberOfModelVertices());
 }

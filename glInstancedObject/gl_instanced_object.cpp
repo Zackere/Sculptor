@@ -8,7 +8,7 @@
 #include "../glObject/gl_object.hpp"
 #include "../matrixApplier/matrix_applier_base.hpp"
 #include "../modelProvider/model_provider_base.hpp"
-#include "../shaderProvider/shader_provider_base.hpp"
+#include "../shaderProgram/shader_program_base.hpp"
 #include "../shapeGenerator/shape_generator_base.hpp"
 #include "../textureProvider/texture_provider_base.hpp"
 
@@ -92,6 +92,10 @@ void glInstancedObject::AddInstances(std::vector<glm::vec3> const& instances) {
   for (auto i = 0u; i < instances.size(); ++i)
     coords[i] = instances[i].z;
   z_positions_buffer_.Append(coords.data(), coords.size());
+}
+
+void glInstancedObject::SetShader(std::unique_ptr<ShaderProgramBase> shader) {
+  reference_model_->SetShader(std::move(shader));
 }
 
 }  // namespace Sculptor

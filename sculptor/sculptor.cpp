@@ -16,12 +16,12 @@
 #include "../camera/third_person_camera.hpp"
 #include "../drill/drill.hpp"
 #include "../glObject/gl_object.hpp"
-#include "../kdtree_constructor/kdtree_cpu_std_constructor.hpp"
-#include "../kdtree_remover/kdtree_gpu_remover.hpp"
+#include "../kdtreeConstructor/kdtree_cpu_std_constructor.hpp"
+#include "../kdtreeRemover/kdtree_gpu_remover.hpp"
 #include "../matrixApplier/matrix_applier.hpp"
 #include "../modelProvider/obj_provider.hpp"
 #include "../sculptingMaterial/cube_sculpting_material.hpp"
-#include "../shaderProvider/shader_provider.hpp"
+#include "../shaderProgram/shader_program.hpp"
 #include "../textureProvider/png_texture_provider.hpp"
 
 namespace Sculptor {
@@ -77,7 +77,7 @@ int Sculptor::Main() {
   constexpr int ncubes = 100;
   std::unique_ptr<glObject> cube = std::make_unique<glObject>(
       std::make_unique<ObjProvider>(base + "model/cube.obj"),
-      std::make_unique<ShaderProvider>(
+      std::make_unique<ShaderProgram>(
           base + "shader/instancedCube/cube_shader.vs",
           base + "shader/cube/cube_shader.fs"),
       std::make_unique<MatrixApplier>(),
@@ -94,8 +94,8 @@ int Sculptor::Main() {
 
   std::unique_ptr<glObject> drill_model = std::make_unique<glObject>(
       std::make_unique<ObjProvider>(base + "model/drill.obj"),
-      std::make_unique<ShaderProvider>(base + "shader/drill/drill_shader.vs",
-                                       base + "shader/drill/drill_shader.fs"),
+      std::make_unique<ShaderProgram>(base + "shader/drill/drill_shader.vs",
+                                      base + "shader/drill/drill_shader.fs"),
       std::make_unique<MatrixApplier>(), nullptr);
   drill_model->Transform(
       glm::scale(glm::mat4(1.f), glm::vec3(0.02, 0.02, 0.02)));

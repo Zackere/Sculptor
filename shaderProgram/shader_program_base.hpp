@@ -5,9 +5,9 @@
 #include <GL/glew.h>
 
 namespace Sculptor {
-class ShaderProviderBase {
+class ShaderProgramBase {
  public:
-  virtual ~ShaderProviderBase() = default;
+  virtual ~ShaderProgramBase() = default;
 
   virtual GLuint Get() = 0;
 };
