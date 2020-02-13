@@ -5,9 +5,11 @@ layout(location = 2)in vec3 normal_vector;
 
 uniform mat4 mvp;
 
+out vec3 pos;
 out vec3 normal;
 
 void main(){
     gl_Position = mvp * vec4(vertexPosition_modelspace, 1);
+    pos = vertexPosition_modelspace;
     normal = normal_vector;
 }

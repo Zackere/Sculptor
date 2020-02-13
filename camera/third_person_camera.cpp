@@ -49,6 +49,11 @@ glm::vec3 ThirdPersonCamera::Rotate(const glm::vec2& direction) {
   return ret;
 }
 
+void ThirdPersonCamera::LoadIntoShader(ShaderProgramBase* shader) {
+  Update();
+  basic_camera_->LoadIntoShader(shader);
+}
+
 void ThirdPersonCamera::Update() {
   basic_camera_->SetPos(target_->GetAvgPosition() + offset);
   basic_camera_->LookAt(target_->GetAvgPosition());

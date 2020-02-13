@@ -19,6 +19,7 @@ class BasicCamera : public Camera {
   glm::vec3 SetPos(glm::vec3 const& pos) override;
   glm::vec3 Zoom(float amount) override;
   glm::vec3 Rotate(glm::vec2 const& direction) override;
+  void LoadIntoShader(ShaderProgramBase* shader) override;
 
  private:
   glm::vec3 pos_, target_, up_;

@@ -18,6 +18,7 @@
 #include "../glObject/gl_object.hpp"
 #include "../kdtreeConstructor/kdtree_cpu_std_constructor.hpp"
 #include "../kdtreeRemover/kdtree_gpu_remover.hpp"
+#include "../light/directional_light.hpp"
 #include "../matrixApplier/matrix_applier.hpp"
 #include "../modelProvider/obj_provider.hpp"
 #include "../sculptingMaterial/cube_sculpting_material.hpp"
@@ -81,7 +82,8 @@ int Sculptor::Main() {
           base + "shader/instancedCube/cube_shader.vs",
           base + "shader/cube/cube_shader.fs"),
       std::make_unique<MatrixApplier>(),
-      std::make_unique<PNGTextureProvider>(base + "texture/cube.png"));
+      std::make_unique<PNGTextureProvider>(base + "texture/cube.png"),
+      glm::vec4{0.3, 0.3, 0.8, 2});
   cube->Transform(glm::scale(
       glm::mat4(1.f), glm::vec3(1.f / ncubes, 1.f / ncubes, 1.f / ncubes)));
 
@@ -96,7 +98,8 @@ int Sculptor::Main() {
       std::make_unique<ObjProvider>(base + "model/drill.obj"),
       std::make_unique<ShaderProgram>(base + "shader/drill/drill_shader.vs",
                                       base + "shader/drill/drill_shader.fs"),
-      std::make_unique<MatrixApplier>(), nullptr);
+      std::make_unique<MatrixApplier>(), nullptr,
+      glm::vec4{0.25, 0.25, 0.8, 3.0});
   drill_model->Transform(
       glm::scale(glm::mat4(1.f), glm::vec3(0.02, 0.02, 0.02)));
   Drill drill(std::move(drill_model));
@@ -105,6 +108,12 @@ int Sculptor::Main() {
   FollowerCamera follower_camera({3, 1.5, 3}, &drill.GetObject(), kUp);
   ThirdPersonCamera thrid_person_camera({0.6, 0.2, 0}, &drill.GetObject(), kUp);
   Camera* active_camera = &static_camera;
+
+  std::unique_ptr<LightBase> lights[] = {
+      std::make_unique<DirectionalLight>(
+          glm::vec3{0.4, 0.4, 0.4}, glm::vec3{1.0, 1.0, 1.0},
+          glm::vec3{1.0, 1.0, 1.0}, glm::vec3{0.0, 1.0, 0.0}),
+  };
 
   double old_mouse_pos_x, old_mouse_pos_y, cur_mouse_pos_x, cur_mouse_pos_y;
   glfwGetCursorPos(window, &cur_mouse_pos_x, &cur_mouse_pos_y);
@@ -150,6 +159,10 @@ int Sculptor::Main() {
 
     drill.Spin();
     material.Collide(drill.GetObject());
+
+    for (auto& light : lights)
+      light->LoadIntoShader(drill.GetObject().GetShader());
+    active_camera->LoadIntoShader(drill.GetObject().GetShader());
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 

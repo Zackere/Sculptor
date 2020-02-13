@@ -40,21 +40,21 @@ glInstancedObject::glInstancedObject(
   z_positions_buffer_.SetData(z_positions.data(), z_positions.size());
 
   auto materialXOffsetsID =
-      glGetAttribLocation(reference_model_->GetShader(), "offset_x");
+      glGetAttribLocation(reference_model_->GetShader()->Get(), "offset_x");
   glVertexAttribDivisor(materialXOffsetsID, 1);
   glEnableVertexAttribArray(materialXOffsetsID);
   glBindBuffer(GL_ARRAY_BUFFER, x_positions_buffer_.GetGLBuffer());
   glVertexAttribPointer(materialXOffsetsID, 1, GL_FLOAT, GL_FALSE, 0, nullptr);
 
   auto materialYOffsetsID =
-      glGetAttribLocation(reference_model_->GetShader(), "offset_y");
+      glGetAttribLocation(reference_model_->GetShader()->Get(), "offset_y");
   glVertexAttribDivisor(materialYOffsetsID, 1);
   glEnableVertexAttribArray(materialYOffsetsID);
   glBindBuffer(GL_ARRAY_BUFFER, y_positions_buffer_.GetGLBuffer());
   glVertexAttribPointer(materialYOffsetsID, 1, GL_FLOAT, GL_FALSE, 0, nullptr);
 
   auto materialZOffsetsID =
-      glGetAttribLocation(reference_model_->GetShader(), "offset_z");
+      glGetAttribLocation(reference_model_->GetShader()->Get(), "offset_z");
   glVertexAttribDivisor(materialZOffsetsID, 1);
   glEnableVertexAttribArray(materialZOffsetsID);
   glBindBuffer(GL_ARRAY_BUFFER, z_positions_buffer_.GetGLBuffer());
@@ -65,8 +65,9 @@ glInstancedObject::~glInstancedObject() = default;
 
 void glInstancedObject::Render(glm::mat4 const& vp) const {
   reference_model_->Enable();
-  glUniformMatrix4fv(glGetUniformLocation(reference_model_->GetShader(), "mvp"),
-                     1, GL_FALSE, &vp[0][0]);
+  glUniformMatrix4fv(
+      glGetUniformLocation(reference_model_->GetShader()->Get(), "mvp"), 1,
+      GL_FALSE, &vp[0][0]);
   glBindTexture(GL_TEXTURE_2D, reference_model_->GetTexture());
   glDrawArraysInstanced(GL_TRIANGLES, 0,
                         reference_model_->GetNumberOfModelVertices(),

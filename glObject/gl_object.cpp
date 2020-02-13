@@ -15,7 +15,8 @@ namespace Sculptor {
 glObject::glObject(std::unique_ptr<ModelProviderBase> model_provider,
                    std::unique_ptr<ShaderProgramBase> shader_program,
                    std::unique_ptr<MatrixApplierBase> matrix_applier,
-                   std::unique_ptr<TextureProviderBase> texture_provider)
+                   std::unique_ptr<TextureProviderBase> texture_provider,
+                   glm::vec4 light_coefficient)
     : model_parameters_{nullptr, nullptr, nullptr},
       shader_(std::move(shader_program)),
       matrix_applier_(std::move(matrix_applier)) {
@@ -55,6 +56,11 @@ glObject::glObject(std::unique_ptr<ModelProviderBase> model_provider,
   glEnableVertexAttribArray(2);
   glBindBuffer(GL_ARRAY_BUFFER, model_parameters_.normals->GetGLBuffer());
   glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+  glUseProgram(shader_->Get());
+  glUniform4f(glGetUniformLocation(shader_->Get(), "light_coefficient"),
+              light_coefficient.x, light_coefficient.y, light_coefficient.z,
+              light_coefficient.w);
 }
 
 glObject::~glObject() = default;
@@ -64,8 +70,8 @@ void glObject::Enable() const {
   glBindVertexArray(vao_);
 }
 
-GLuint glObject::GetShader() const {
-  return shader_->Get();
+ShaderProgramBase* glObject::GetShader() {
+  return shader_.get();
 }
 
 void glObject::SetShader(std::unique_ptr<ShaderProgramBase> shader) {

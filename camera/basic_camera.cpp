@@ -3,6 +3,9 @@
 #include "basic_camera.hpp"
 
 #include <glm/gtc/matrix_transform.hpp>
+
+#include "../shaderProgram/shader_program_base.hpp"
+
 #ifndef GLM_ENABLE_EXPERIMENTAL
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/rotate_vector.hpp>
@@ -47,5 +50,11 @@ glm::vec3 BasicCamera::Rotate(glm::vec2 const& direction) {
     pos_ += target_;
   }
   return pos_;
+}
+
+void BasicCamera::LoadIntoShader(ShaderProgramBase* shader) {
+  glUseProgram(shader->Get());
+  glUniform3f(glGetUniformLocation(shader->Get(), "eye_pos"), pos_.x, pos_.y,
+              pos_.z);
 }
 }  // namespace Sculptor

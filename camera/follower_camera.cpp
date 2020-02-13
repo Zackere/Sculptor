@@ -42,6 +42,11 @@ glm::vec3 FollowerCamera::Rotate(glm::vec2 const& direction) {
   return basic_camera_->Rotate(direction);
 }
 
+void FollowerCamera::LoadIntoShader(ShaderProgramBase* shader) {
+  Update();
+  basic_camera_->LoadIntoShader(shader);
+}
+
 void FollowerCamera::Update() {
   basic_camera_->LookAt(target_->GetAvgPosition());
 }

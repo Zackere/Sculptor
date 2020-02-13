@@ -22,14 +22,15 @@ class glObject {
   glObject(std::unique_ptr<ModelProviderBase> model_provider,
            std::unique_ptr<ShaderProgramBase> shader_program,
            std::unique_ptr<MatrixApplierBase> matrix_applier,
-           std::unique_ptr<TextureProviderBase> texture_provider);
+           std::unique_ptr<TextureProviderBase> texture_provider,
+           glm::vec4 light_coefficient);
   ~glObject();
 
   void Render(glm::mat4 const& vp) const;
   void Transform(glm::mat4 const& m);
   void Enable() const;
 
-  GLuint GetShader() const;
+  ShaderProgramBase* GetShader();
   auto GetTexture() const { return texture_; }
   auto GetNumberOfModelVertices() const {
     return model_parameters_.verticies->GetSize();
