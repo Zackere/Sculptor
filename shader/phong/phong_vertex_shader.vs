@@ -10,9 +10,9 @@ out vec3 normal;
 out vec2 uv;
 
 void main(){
-    gl_Position = vp * vec4(vertex_position, 1);
     pos = vertex_position;
     normal = vertex_normal;
     uv = vertex_uv;
+    gl_Position = vp * vec4(pos, 1);
 }
 

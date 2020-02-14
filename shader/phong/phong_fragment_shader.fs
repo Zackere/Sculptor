@@ -29,13 +29,13 @@ void main(){
         if(!SculptorDirectionalLight[i].enabled)
             continue;
 
-        vec3 light = normalize(SculptorDirectionalLight[i].direction - pos);
+        vec3 light = normalize(SculptorDirectionalLight[i].direction);
         float diff_cos = max(dot(light, n), 0.0);
-        float spec_cos = pow(max(dot(normalize(2 * diff_cos * n - light), light), 0.0), light_coefficient.w);
+        float spec_cos = pow(max(dot(2 * diff_cos * n - light, eye_dir), 0.0), light_coefficient.w);
 
         color += light_coefficient.x * SculptorDirectionalLight[i].ambient
                + light_coefficient.y * SculptorDirectionalLight[i].diffuse * diff_cos
-               + light_coefficient.z * SculptorDirectionalLight[i].specular * spec_cos;
+               + light_coefficient.z * SculptorDirectionalLight[i].specular * (diff_cos > 0 ? spec_cos : 0);
     }
     color *= texture(texture_sampler, uv).rgb;
     clamp(color, 0.0, 1.0);

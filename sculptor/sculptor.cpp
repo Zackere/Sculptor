@@ -84,7 +84,7 @@ int Sculptor::Main() {
           base + "shader/phong/phong_fragment_shader.fs"),
       std::make_unique<MatrixApplier>(),
       std::make_unique<PNGTextureProvider>(base + "texture/cube.png"),
-      glm::vec4{1, 0.8, 0.2, 2});
+      glm::vec4{1.0, 0.5, 1, 200.0});
   cube->Transform(glm::scale(
       glm::mat4(1.f), glm::vec3(1.f / ncubes, 1.f / ncubes, 1.f / ncubes)));
 
@@ -102,7 +102,7 @@ int Sculptor::Main() {
           base + "shader/phong/phong_fragment_shader.fs"),
       std::make_unique<MatrixApplier>(),
       std::make_unique<PNGTextureProvider>(base + "texture/drill.png"),
-      glm::vec4{1, 0.4, 0.8, 10.0});
+      glm::vec4{1.0, 0.4, 1.0, 10.0});
   drill_model->Transform(
       glm::scale(glm::mat4(1.f), glm::vec3(0.02, 0.02, 0.02)));
   Drill drill(std::move(drill_model));
@@ -168,11 +168,13 @@ int Sculptor::Main() {
       light->LoadIntoShader(material.GetObject().GetShader());
     }
     active_camera->LoadIntoShader(drill.GetObject().GetShader());
+    active_camera->LoadIntoShader(material.GetObject().GetShader());
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     material.Render(vp);
     drill.Render(vp);
+
     glfwSwapBuffers(window);
   } while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS &&
            glfwWindowShouldClose(window) == 0);
