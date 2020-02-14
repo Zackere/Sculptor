@@ -31,6 +31,8 @@ class CubeSculptingMaterial {
 
   void Collide(glObject& object);
 
+  glInstancedObject& GetObject();
+
  private:
   float angle_ = 0;
   float side_len_;

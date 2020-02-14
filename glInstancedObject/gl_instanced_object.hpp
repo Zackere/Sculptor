@@ -36,6 +36,7 @@ class glInstancedObject {
   void AddInstances(std::vector<glm::vec3> const& instances);
 
   void SetShader(std::unique_ptr<ShaderProgramBase> shader);
+  ShaderProgramBase* GetShader();
 
  private:
   std::unique_ptr<glObject> reference_model_;

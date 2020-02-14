@@ -108,4 +108,8 @@ void CubeSculptingMaterial::Collide(glObject& object) {
   matrix_applier_->Apply(removed, m_for);
   visible_material_->AddInstances(removed);
 }
+
+glInstancedObject& CubeSculptingMaterial::GetObject() {
+  return *visible_material_;
+}
 }  // namespace Sculptor

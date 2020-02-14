@@ -66,7 +66,7 @@ glInstancedObject::~glInstancedObject() = default;
 void glInstancedObject::Render(glm::mat4 const& vp) const {
   reference_model_->Enable();
   glUniformMatrix4fv(
-      glGetUniformLocation(reference_model_->GetShader()->Get(), "mvp"), 1,
+      glGetUniformLocation(reference_model_->GetShader()->Get(), "vp"), 1,
       GL_FALSE, &vp[0][0]);
   glBindTexture(GL_TEXTURE_2D, reference_model_->GetTexture());
   glDrawArraysInstanced(GL_TRIANGLES, 0,
@@ -97,6 +97,10 @@ void glInstancedObject::AddInstances(std::vector<glm::vec3> const& instances) {
 
 void glInstancedObject::SetShader(std::unique_ptr<ShaderProgramBase> shader) {
   reference_model_->SetShader(std::move(shader));
+}
+
+ShaderProgramBase* glInstancedObject::GetShader() {
+  return reference_model_->GetShader();
 }
 
 }  // namespace Sculptor

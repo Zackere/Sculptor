@@ -42,8 +42,7 @@ glObject::glObject(std::unique_ptr<ModelProviderBase> model_provider,
       std::make_unique<CudaGraphicsResource<glm::vec3>>(normals.size());
   model_parameters_.normals->SetData(normals.data(), normals.size());
 
-  if (texture_provider)
-    texture_ = texture_provider->Get();
+  texture_ = texture_provider->Get();
 
   glEnableVertexAttribArray(0);
   glBindBuffer(GL_ARRAY_BUFFER, model_parameters_.verticies->GetGLBuffer());
@@ -68,6 +67,7 @@ glObject::~glObject() = default;
 void glObject::Enable() const {
   glUseProgram(shader_->Get());
   glBindVertexArray(vao_);
+  glBindTexture(GL_TEXTURE_2D, texture_);
 }
 
 ShaderProgramBase* glObject::GetShader() {
@@ -80,7 +80,7 @@ void glObject::SetShader(std::unique_ptr<ShaderProgramBase> shader) {
 
 void glObject::Render(glm::mat4 const& vp) const {
   Enable();
-  glUniformMatrix4fv(glGetUniformLocation(shader_->Get(), "mvp"), 1, GL_FALSE,
+  glUniformMatrix4fv(glGetUniformLocation(shader_->Get(), "vp"), 1, GL_FALSE,
                      &vp[0][0]);
   glDrawArrays(GL_TRIANGLES, 0, GetNumberOfModelVertices());
 }

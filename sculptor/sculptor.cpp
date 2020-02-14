@@ -15,6 +15,7 @@
 #include "../camera/follower_camera.hpp"
 #include "../camera/third_person_camera.hpp"
 #include "../drill/drill.hpp"
+#include "../glInstancedObject/gl_instanced_object.hpp"
 #include "../glObject/gl_object.hpp"
 #include "../kdtreeConstructor/kdtree_cpu_std_constructor.hpp"
 #include "../kdtreeRemover/kdtree_gpu_remover.hpp"
@@ -79,11 +80,11 @@ int Sculptor::Main() {
   std::unique_ptr<glObject> cube = std::make_unique<glObject>(
       std::make_unique<ObjProvider>(base + "model/cube.obj"),
       std::make_unique<ShaderProgram>(
-          base + "shader/instancedCube/cube_shader.vs",
-          base + "shader/cube/cube_shader.fs"),
+          base + "shader/phong/instanced_phong_vertex_shader.vs",
+          base + "shader/phong/phong_fragment_shader.fs"),
       std::make_unique<MatrixApplier>(),
       std::make_unique<PNGTextureProvider>(base + "texture/cube.png"),
-      glm::vec4{0.3, 0.3, 0.8, 2});
+      glm::vec4{1, 0.8, 0.2, 2});
   cube->Transform(glm::scale(
       glm::mat4(1.f), glm::vec3(1.f / ncubes, 1.f / ncubes, 1.f / ncubes)));
 
@@ -96,10 +97,12 @@ int Sculptor::Main() {
 
   std::unique_ptr<glObject> drill_model = std::make_unique<glObject>(
       std::make_unique<ObjProvider>(base + "model/drill.obj"),
-      std::make_unique<ShaderProgram>(base + "shader/drill/drill_shader.vs",
-                                      base + "shader/drill/drill_shader.fs"),
-      std::make_unique<MatrixApplier>(), nullptr,
-      glm::vec4{0.25, 0.25, 0.8, 3.0});
+      std::make_unique<ShaderProgram>(
+          base + "shader/phong/phong_vertex_shader.vs",
+          base + "shader/phong/phong_fragment_shader.fs"),
+      std::make_unique<MatrixApplier>(),
+      std::make_unique<PNGTextureProvider>(base + "texture/drill.png"),
+      glm::vec4{1, 0.4, 0.8, 10.0});
   drill_model->Transform(
       glm::scale(glm::mat4(1.f), glm::vec3(0.02, 0.02, 0.02)));
   Drill drill(std::move(drill_model));
@@ -111,8 +114,8 @@ int Sculptor::Main() {
 
   std::unique_ptr<LightBase> lights[] = {
       std::make_unique<DirectionalLight>(
-          glm::vec3{0.4, 0.4, 0.4}, glm::vec3{1.0, 1.0, 1.0},
-          glm::vec3{1.0, 1.0, 1.0}, glm::vec3{0.0, 1.0, 0.0}),
+          glm::vec3{0.3, 0.3, 0.3}, glm::vec3{1.0, 1.0, 1.0},
+          glm::vec3{1.0, 1.0, 1.0}, glm::vec3{3.0, 3.0, 3.0}),
   };
 
   double old_mouse_pos_x, old_mouse_pos_y, cur_mouse_pos_x, cur_mouse_pos_y;
@@ -160,8 +163,10 @@ int Sculptor::Main() {
     drill.Spin();
     material.Collide(drill.GetObject());
 
-    for (auto& light : lights)
+    for (auto& light : lights) {
       light->LoadIntoShader(drill.GetObject().GetShader());
+      light->LoadIntoShader(material.GetObject().GetShader());
+    }
     active_camera->LoadIntoShader(drill.GetObject().GetShader());
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
