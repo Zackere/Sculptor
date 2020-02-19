@@ -20,6 +20,7 @@
 #include "../kdtreeConstructor/kdtree_cpu_std_constructor.hpp"
 #include "../kdtreeRemover/kdtree_gpu_remover.hpp"
 #include "../light/directional_light.hpp"
+#include "../light/point_light.hpp"
 #include "../matrixApplier/matrix_applier.hpp"
 #include "../modelProvider/obj_provider.hpp"
 #include "../sculptingMaterial/cube_sculpting_material.hpp"
@@ -116,6 +117,14 @@ int Sculptor::Main() {
       std::make_unique<DirectionalLight>(
           glm::vec3{0.3, 0.3, 0.3}, glm::vec3{1.0, 1.0, 1.0},
           glm::vec3{1.0, 1.0, 1.0}, glm::vec3{3.0, 3.0, 3.0}),
+      std::make_unique<PointLight>(
+          glm::vec3{0.0, 0.0, 0.0}, glm::vec3{5.0, 5.0, 5.0},
+          glm::vec3{5.0, 5.0, 5.0}, glm::vec3{0, -1.5, 0},
+          glm::vec3{1.0, 1.5, 2.0}),
+      std::make_unique<PointLight>(
+          glm::vec3{0.0, 0.0, 0.0}, glm::vec3{5.0, 5.0, 5.0},
+          glm::vec3{5.0, 5.0, 5.0}, glm::vec3{0, 1.5, 0},
+          glm::vec3{1.0, 1.5, 2.0}),
   };
 
   double old_mouse_pos_x, old_mouse_pos_y, cur_mouse_pos_x, cur_mouse_pos_y;

@@ -3,11 +3,11 @@
 #pragma once
 
 #include <glm/glm.hpp>
-#include <set>
 
 #include "light_base.hpp"
 
 namespace Sculptor {
+class ShaderProgramBase;
 
 class DirectionalLight : public LightBase {
  public:

@@ -2,6 +2,8 @@
 
 #include "directional_light.hpp"
 
+#include <string>
+
 #include "../shaderProgram/shader_program_base.hpp"
 
 namespace Sculptor {

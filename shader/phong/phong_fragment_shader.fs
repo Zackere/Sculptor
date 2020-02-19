@@ -10,6 +10,17 @@ struct DirectionalLight{
 #define NDIRECTIONALLIGHTS 1
 uniform DirectionalLight SculptorDirectionalLight[NDIRECTIONALLIGHTS];
 
+struct PointLight{
+    vec3 position;
+    vec3 attenuation;
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+    bool enabled;
+};
+#define NPOINTLIGHTS 4
+uniform PointLight SculptorPointLight[NPOINTLIGHTS];
+
 uniform vec4 light_coefficient;
 uniform vec3 eye_pos;
 uniform sampler2D texture_sampler;
@@ -21,6 +32,7 @@ in vec2 uv;
 out vec3 color;
 
 vec3 CalculateDirectionalLightContribution(vec3 normal, vec3 eye_dir);
+vec3 CalculatePointLightContribution(vec3 normal, vec3 eye_dir);
 
 void main(){
     vec3 n = normalize(normal);
@@ -29,6 +41,7 @@ void main(){
     color = vec3(0, 0, 0);
 
     color += CalculateDirectionalLightContribution(n, eye_dir);
+    color += CalculatePointLightContribution(n, eye_dir);
 
     color *= texture(texture_sampler, uv).rgb;
     clamp(color, 0.0, 1.0);
@@ -47,6 +60,27 @@ vec3 CalculateDirectionalLightContribution(vec3 normal, vec3 eye_dir) {
         ret += light_coefficient.x * SculptorDirectionalLight[i].ambient
              + light_coefficient.y * SculptorDirectionalLight[i].diffuse * diff_cos
              + light_coefficient.z * SculptorDirectionalLight[i].specular * (diff_cos > 0 ? spec_cos : 0);
+    }
+    return ret;
+}
+
+vec3 CalculatePointLightContribution(vec3 normal, vec3 eye_dir) {
+    vec3 ret = vec3(0, 0, 0);
+    for(int i = 0; i < NPOINTLIGHTS; ++i) {
+        if(!SculptorPointLight[i].enabled)
+            continue;
+
+        float distance = length(SculptorPointLight[i].position - pos);
+        float att = 1.0 / dot(vec3(1, distance, distance * distance), SculptorPointLight[i].attenuation);
+
+        vec3 light = (SculptorPointLight[i].position - pos) / distance;
+        float diff_cos = max(dot(light, normal), 0.0);
+        float spec_cos = pow(max(dot(2 * diff_cos * normal - light, eye_dir), 0.0), light_coefficient.w);
+
+        ret += (light_coefficient.x * SculptorPointLight[i].ambient
+              + light_coefficient.y * SculptorPointLight[i].diffuse * diff_cos
+              + light_coefficient.z * SculptorPointLight[i].specular * (diff_cos > 0 ? spec_cos : 0)
+               ) * att;
     }
     return ret;
 }
