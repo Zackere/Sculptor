@@ -19,6 +19,8 @@ class DirectionalLight : public LightBase {
 
   void LoadIntoShader(ShaderProgramBase* shader) override;
 
+  void SetPosition(glm::vec3) override {}
+
  private:
   static constexpr auto kClassName = "SculptorDirectionalLight";
 

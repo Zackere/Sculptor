@@ -18,12 +18,9 @@ class KdTreeRemover;
 
 class CubeSculptingMaterial {
  public:
-  CubeSculptingMaterial(
-      int ncubes_per_side,
-      std::unique_ptr<glObject> reference_model,
-      std::unique_ptr<MatrixApplierBase> matrix_applier,
-      std::unique_ptr<KdTreeConstructor> kd_tree_constructor,
-      std::unique_ptr<KdTreeRemover> nearest_neighbour_finder);
+  CubeSculptingMaterial(int ncubes_per_side,
+                        std::unique_ptr<glObject> reference_model,
+                        std::unique_ptr<MatrixApplierBase> matrix_applier);
   ~CubeSculptingMaterial();
 
   void Render(glm::mat4 const& vp);
@@ -36,13 +33,8 @@ class CubeSculptingMaterial {
  private:
   float angle_ = 0;
   float side_len_;
-  HollowCubeGenerator hollow_cube_generator_;
-  CubeGenerator cube_generator_;
   std::unique_ptr<glInstancedObject> visible_material_;
-  CudaGraphicsResource<float> invisible_material_x_, invisible_material_y_,
-      invisible_material_z_;
-  std::unique_ptr<KdTreeConstructor> kd_tree_constructor_;
-  std::unique_ptr<KdTreeRemover> nearest_neighbour_finder_;
+  CudaGraphicsResource<float> material_x_, material_y_, material_z_;
   std::unique_ptr<MatrixApplierBase> matrix_applier_;
 };
 }  // namespace Sculptor

@@ -21,6 +21,7 @@
 #include "../kdtreeRemover/kdtree_gpu_remover.hpp"
 #include "../light/directional_light.hpp"
 #include "../light/point_light.hpp"
+#include "../light/spotlight.hpp"
 #include "../matrixApplier/matrix_applier.hpp"
 #include "../modelProvider/obj_provider.hpp"
 #include "../sculptingMaterial/cube_sculpting_material.hpp"
@@ -86,15 +87,9 @@ int Sculptor::Main() {
       std::make_unique<MatrixApplier>(),
       std::make_unique<PNGTextureProvider>(base + "texture/cube.png"),
       glm::vec4{1.0, 0.5, 1, 200.0});
-  cube->Transform(glm::scale(
-      glm::mat4(1.f), glm::vec3(1.f / ncubes, 1.f / ncubes, 1.f / ncubes)));
 
-  CubeSculptingMaterial material(
-      ncubes, std::move(cube), std::make_unique<MatrixApplier>(),
-      std::make_unique<KdTreeConstructor>(
-          std::make_unique<KdTreeCPUStdConstructor>()),
-      std::make_unique<KdTreeRemover>(
-          std::make_unique<KdTreeGPURemoverHeurestic>()));
+  CubeSculptingMaterial material(ncubes, std::move(cube),
+                                 std::make_unique<MatrixApplier>());
 
   std::unique_ptr<glObject> drill_model = std::make_unique<glObject>(
       std::make_unique<ObjProvider>(base + "model/drill.obj"),
@@ -117,13 +112,13 @@ int Sculptor::Main() {
       std::make_unique<DirectionalLight>(
           glm::vec3{0.3, 0.3, 0.3}, glm::vec3{1.0, 1.0, 1.0},
           glm::vec3{1.0, 1.0, 1.0}, glm::vec3{3.0, 3.0, 3.0}),
+      std::make_unique<Spotlight>(
+          glm::vec3{0.0, 0.0, 0.0}, glm::vec3{5.0, 5.0, 5.0},
+          glm::vec3{5.0, 5.0, 5.0}, glm::vec3{1.2, 1.2, 1.2},
+          glm::vec3{0.0, 0.0, 0.0}, glm::vec2{0.7, 0.6}),
       std::make_unique<PointLight>(
           glm::vec3{0.0, 0.0, 0.0}, glm::vec3{5.0, 5.0, 5.0},
           glm::vec3{5.0, 5.0, 5.0}, glm::vec3{0, -1.5, 0},
-          glm::vec3{1.0, 1.5, 2.0}),
-      std::make_unique<PointLight>(
-          glm::vec3{0.0, 0.0, 0.0}, glm::vec3{5.0, 5.0, 5.0},
-          glm::vec3{5.0, 5.0, 5.0}, glm::vec3{0, 1.5, 0},
           glm::vec3{1.0, 1.5, 2.0}),
   };
 
@@ -151,11 +146,11 @@ int Sculptor::Main() {
       drill.MoveUp();
     else if (is_key_pressed(GLFW_KEY_Q))
       drill.MoveDown();
-    if (is_key_pressed(GLFW_KEY_F1))
+    if (is_key_pressed(GLFW_KEY_1))
       active_camera = &static_camera;
-    else if (is_key_pressed(GLFW_KEY_F2))
+    else if (is_key_pressed(GLFW_KEY_2))
       active_camera = &follower_camera;
-    else if (is_key_pressed(GLFW_KEY_F3))
+    else if (is_key_pressed(GLFW_KEY_3))
       active_camera = &thrid_person_camera;
 
     glfwGetCursorPos(window, &cur_mouse_pos_x, &cur_mouse_pos_y);

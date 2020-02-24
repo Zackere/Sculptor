@@ -30,4 +30,8 @@ void PointLight::LoadIntoShader(ShaderProgramBase* shader) {
           (std::string(kClassName) + '[' + id + "].attenuation").c_str()),
       attenuation_.x, attenuation_.y, attenuation_.z);
 }
+
+void PointLight::SetPosition(glm::vec3 pos) {
+  position_ = pos;
+}
 }  // namespace Sculptor

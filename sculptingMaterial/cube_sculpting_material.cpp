@@ -14,48 +14,28 @@
 #include "../shapeGenerator/shape_generator_base.hpp"
 
 namespace Sculptor {
-namespace {
-constexpr float kEps = 0.01f;
-}
 CubeSculptingMaterial::CubeSculptingMaterial(
     int ncubes_per_side,
     std::unique_ptr<glObject> reference_model,
-    std::unique_ptr<MatrixApplierBase> matrix_applier,
-    std::unique_ptr<KdTreeConstructor> kd_tree_constructor,
-    std::unique_ptr<KdTreeRemover> nearest_neighbour_finder)
+    std::unique_ptr<MatrixApplierBase> matrix_applier)
     : side_len_(2.f / ncubes_per_side),
-      hollow_cube_generator_(side_len_),
-      cube_generator_(std::make_unique<HollowCubeGenerator>(side_len_)),
       visible_material_(std::make_unique<glInstancedObject>(
-          ncubes_per_side,
-          hollow_cube_generator_.GetNumberOfOutputs(ncubes_per_side) +
-              cube_generator_.GetNumberOfOutputs(ncubes_per_side - 2),
+          0,
+          ncubes_per_side * ncubes_per_side * ncubes_per_side,
           std::move(reference_model),
           std::make_unique<HollowCubeGenerator>(side_len_),
           matrix_applier->Clone())),
-      invisible_material_x_(
-          cube_generator_.GetNumberOfOutputs(ncubes_per_side - 2)),
-      invisible_material_y_(
-          cube_generator_.GetNumberOfOutputs(ncubes_per_side - 2)),
-      invisible_material_z_(
-          cube_generator_.GetNumberOfOutputs(ncubes_per_side - 2)),
-      kd_tree_constructor_(std::move(kd_tree_constructor)),
-      nearest_neighbour_finder_(std::move(nearest_neighbour_finder)),
+      material_x_(ncubes_per_side * ncubes_per_side * ncubes_per_side),
+      material_y_(ncubes_per_side * ncubes_per_side * ncubes_per_side),
+      material_z_(ncubes_per_side * ncubes_per_side * ncubes_per_side),
       matrix_applier_(matrix_applier->Clone()) {
-  auto off = cube_generator_.Generate(ncubes_per_side - 2);
-  std::vector<float> coordinate(off.size());
-  for (auto i = 0u; i < off.size(); ++i)
-    coordinate[i] = off[i].x;
-  invisible_material_x_.SetData(coordinate.data(), coordinate.size());
-  for (auto i = 0u; i < off.size(); ++i)
-    coordinate[i] = off[i].y;
-  invisible_material_y_.SetData(coordinate.data(), coordinate.size());
-  for (auto i = 0u; i < off.size(); ++i)
-    coordinate[i] = off[i].z;
-  invisible_material_z_.SetData(coordinate.data(), coordinate.size());
+  material_x_.PushBack(0);
+  material_y_.PushBack(0);
+  material_z_.PushBack(0);
+  visible_material_->AddInstances({glm::vec3{0, 0, 0}});
 }
 
-CubeSculptingMaterial::~CubeSculptingMaterial() {}
+CubeSculptingMaterial::~CubeSculptingMaterial() = default;
 
 void CubeSculptingMaterial::Render(glm::mat4 const& vp) {
   visible_material_->Render(vp);

@@ -19,6 +19,7 @@ class PointLight : public LightBase {
   ~PointLight() override = default;
 
   void LoadIntoShader(ShaderProgramBase* shader) override;
+  void SetPosition(glm::vec3 pos) override;
 
  private:
   static constexpr auto kClassName = "SculptorPointLight";

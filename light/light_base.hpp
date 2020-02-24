@@ -26,6 +26,8 @@ class LightBase {
   glm::vec3 GetDiffuse() const { return diffuse_; }
   glm::vec3 GetSpecular() const { return specular_; }
 
+  virtual void SetPosition(glm::vec3 pos) = 0;
+
  protected:
   unsigned GetId() const { return id_; }
 
