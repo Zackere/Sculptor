@@ -2,6 +2,7 @@
 
 #include "gl_instanced_object.hpp"
 
+#include <glm/gtc/matrix_transform.hpp>
 #include <utility>
 #include <vector>
 
@@ -21,44 +22,27 @@ glInstancedObject::glInstancedObject(
     std::unique_ptr<MatrixApplierBase> matrix_applier)
     : reference_model_(std::move(reference_model)),
       shape_generator_(std::move(shape_generator)),
-      x_positions_buffer_(ninstances_max),
-      y_positions_buffer_(ninstances_max),
-      z_positions_buffer_(ninstances_max),
+      model_transforms_(ninstances_max),
       matrix_applier_(std::move(matrix_applier)) {
-  std::vector<float> x_positions, y_positions, z_positions;
-  x_positions.reserve(shape_generator_->GetNumberOfOutputs(ninstances_init));
-  y_positions.reserve(x_positions.capacity());
-  z_positions.reserve(x_positions.capacity());
-  for (auto& v : shape_generator_->Generate(ninstances_init)) {
-    x_positions.emplace_back(v.x);
-    y_positions.emplace_back(v.y);
-    z_positions.emplace_back(v.z);
+  std::vector<glm::mat4> model_transforms;
+  model_transforms.reserve(
+      shape_generator_->GetNumberOfOutputs(ninstances_init));
+  for (auto& v : shape_generator_->Generate(ninstances_init))
+    model_transforms.emplace_back(glm::translate(glm::mat4(1.f), v));
+
+  model_transforms_.SetData(model_transforms.data(), model_transforms.size());
+
+  auto materialTransformsID = glGetAttribLocation(
+      reference_model_->GetShader()->Get(), "model_transform");
+  glEnableVertexAttribArray(materialTransformsID);
+  glBindBuffer(GL_ARRAY_BUFFER, model_transforms_.GetGLBuffer());
+  for (int i = 0; i < 4; ++i) {
+    glEnableVertexAttribArray(materialTransformsID + i);
+    glVertexAttribPointer(materialTransformsID + i, 4, GL_FLOAT, GL_FALSE,
+                          sizeof(glm::mat4),
+                          reinterpret_cast<void*>(sizeof(float) * i * 4));
+    glVertexAttribDivisor(materialTransformsID + i, 1);
   }
-
-  x_positions_buffer_.SetData(x_positions.data(), x_positions.size());
-  y_positions_buffer_.SetData(y_positions.data(), y_positions.size());
-  z_positions_buffer_.SetData(z_positions.data(), z_positions.size());
-
-  auto materialXOffsetsID =
-      glGetAttribLocation(reference_model_->GetShader()->Get(), "offset_x");
-  glVertexAttribDivisor(materialXOffsetsID, 1);
-  glEnableVertexAttribArray(materialXOffsetsID);
-  glBindBuffer(GL_ARRAY_BUFFER, x_positions_buffer_.GetGLBuffer());
-  glVertexAttribPointer(materialXOffsetsID, 1, GL_FLOAT, GL_FALSE, 0, nullptr);
-
-  auto materialYOffsetsID =
-      glGetAttribLocation(reference_model_->GetShader()->Get(), "offset_y");
-  glVertexAttribDivisor(materialYOffsetsID, 1);
-  glEnableVertexAttribArray(materialYOffsetsID);
-  glBindBuffer(GL_ARRAY_BUFFER, y_positions_buffer_.GetGLBuffer());
-  glVertexAttribPointer(materialYOffsetsID, 1, GL_FLOAT, GL_FALSE, 0, nullptr);
-
-  auto materialZOffsetsID =
-      glGetAttribLocation(reference_model_->GetShader()->Get(), "offset_z");
-  glVertexAttribDivisor(materialZOffsetsID, 1);
-  glEnableVertexAttribArray(materialZOffsetsID);
-  glBindBuffer(GL_ARRAY_BUFFER, z_positions_buffer_.GetGLBuffer());
-  glVertexAttribPointer(materialZOffsetsID, 1, GL_FLOAT, GL_FALSE, 0, nullptr);
 }
 
 glInstancedObject::~glInstancedObject() = default;
@@ -75,24 +59,12 @@ void glInstancedObject::Render(glm::mat4 const& vp) const {
 }
 
 void glInstancedObject::Transform(glm::mat4 const& m) {
-  reference_model_->Transform(m);
-  matrix_applier_->Apply(x_positions_buffer_.GetCudaResource(),
-                         y_positions_buffer_.GetCudaResource(),
-                         z_positions_buffer_.GetCudaResource(),
-                         x_positions_buffer_.GetSize(), m);
+  matrix_applier_->Apply(model_transforms_, m);
 }
 
 void glInstancedObject::AddInstances(std::vector<glm::vec3> const& instances) {
-  std::vector<float> coords(instances.size());
-  for (auto i = 0u; i < instances.size(); ++i)
-    coords[i] = instances[i].x;
-  x_positions_buffer_.Append(coords.data(), coords.size());
-  for (auto i = 0u; i < instances.size(); ++i)
-    coords[i] = instances[i].y;
-  y_positions_buffer_.Append(coords.data(), coords.size());
-  for (auto i = 0u; i < instances.size(); ++i)
-    coords[i] = instances[i].z;
-  z_positions_buffer_.Append(coords.data(), coords.size());
+  for (auto& v : instances)
+    model_transforms_.PushBack(glm::translate(glm::mat4(1.f), v));
 }
 
 void glInstancedObject::SetShader(std::unique_ptr<ShaderProgramBase> shader) {

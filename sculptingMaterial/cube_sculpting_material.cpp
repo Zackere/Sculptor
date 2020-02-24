@@ -71,43 +71,7 @@ void CubeSculptingMaterial::Rotate(float amount) {
     angle_ += glm::two_pi<float>();
 }
 
-void CubeSculptingMaterial::Collide(glObject& object) {
-  kd_tree_constructor_->Construct(visible_material_->GetVecticesX(),
-                                  visible_material_->GetVecticesY(),
-                                  visible_material_->GetVecticesZ());
-  std::vector<glm::vec3> removed;
-  removed = nearest_neighbour_finder_->RemoveNearest(
-      visible_material_->GetVecticesX(), visible_material_->GetVecticesY(),
-      visible_material_->GetVecticesZ(), *object.GetVertices(), side_len_ / 2);
-  if (removed.empty())
-    return;
-
-  auto m_back = glm::rotate(glm::mat4(1.f), -angle_, glm::vec3{0, 1, 0});
-  auto m_for = glm::rotate(glm::mat4(1.f), angle_, glm::vec3{0, 1, 0});
-
-  std::vector<glm::vec3> to_be_added;
-  to_be_added.reserve(removed.size() * 6);
-  for (auto const& v : removed) {
-    auto p = m_back * glm::vec4(v, 1.f);
-    to_be_added.emplace_back(glm::vec3{p.x + side_len_, p.y, p.z});
-    to_be_added.emplace_back(glm::vec3{p.x - side_len_, p.y, p.z});
-    to_be_added.emplace_back(glm::vec3{p.x, p.y + side_len_, p.z});
-    to_be_added.emplace_back(glm::vec3{p.x, p.y - side_len_, p.z});
-    to_be_added.emplace_back(glm::vec3{p.x, p.y, p.z + side_len_});
-    to_be_added.emplace_back(glm::vec3{p.x, p.y, p.z - side_len_});
-  }
-  CudaGraphicsResource<glm::vec3> to_be_added_resource(to_be_added.size());
-  to_be_added_resource.SetData(to_be_added.data(), to_be_added.size());
-
-  kd_tree_constructor_->Construct(invisible_material_x_, invisible_material_y_,
-                                  invisible_material_z_);
-  removed = nearest_neighbour_finder_->RemoveNearest(
-      invisible_material_x_, invisible_material_y_, invisible_material_z_,
-      to_be_added_resource, kEps);
-
-  matrix_applier_->Apply(removed, m_for);
-  visible_material_->AddInstances(removed);
-}
+void CubeSculptingMaterial::Collide(glObject&) {}
 
 glInstancedObject& CubeSculptingMaterial::GetObject() {
   return *visible_material_;

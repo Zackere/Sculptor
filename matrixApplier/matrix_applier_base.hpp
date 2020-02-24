@@ -2,11 +2,11 @@
 
 #pragma once
 
-#include <cuda_gl_interop.h>
-
 #include <glm/glm.hpp>
 #include <memory>
 #include <vector>
+
+#include "../cudaGraphics/cudaGraphicsResource/cuda_graphics_resource.hpp"
 
 namespace Sculptor {
 class MatrixApplierBase {
@@ -15,13 +15,13 @@ class MatrixApplierBase {
 
   virtual void Apply(std::vector<glm::vec3>& vectors,
                      glm::mat4 const& matrix) = 0;
-  virtual void Apply(cudaGraphicsResource* vectors,
-                     int nvectors,
+  virtual void Apply(CudaGraphicsResource<glm::vec3>& vectors,
                      glm::mat4 const& matrix) = 0;
-  virtual void Apply(cudaGraphicsResource* x,
-                     cudaGraphicsResource* y,
-                     cudaGraphicsResource* z,
-                     int nvectors,
+  virtual void Apply(CudaGraphicsResource<glm::mat4>& matricies,
+                     glm::mat4 const& matrix) = 0;
+  virtual void Apply(CudaGraphicsResource<float>& x,
+                     CudaGraphicsResource<float>& y,
+                     CudaGraphicsResource<float>& z,
                      glm::mat4 const& matrix) = 0;
   virtual std::unique_ptr<MatrixApplierBase> Clone() const = 0;
 };

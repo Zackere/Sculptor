@@ -86,10 +86,8 @@ void glObject::Render(glm::mat4 const& vp) const {
 }
 
 void glObject::Transform(glm::mat4 const& m) {
-  matrix_applier_->Apply(model_parameters_.verticies->GetCudaResource(),
-                         model_parameters_.verticies->GetSize(), m);
-  matrix_applier_->Apply(model_parameters_.normals->GetCudaResource(),
-                         model_parameters_.normals->GetSize(),
+  matrix_applier_->Apply(*model_parameters_.verticies, m);
+  matrix_applier_->Apply(*model_parameters_.normals,
                          glm::transpose(glm::inverse(m)));
   average_pos_ = m * glm::vec4(average_pos_, 1.f);
 }
