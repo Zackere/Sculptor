@@ -6,15 +6,11 @@
 #include <memory>
 
 #include "../cudaGraphics/cudaGraphicsResource/cuda_graphics_resource.hpp"
-#include "../shapeGenerator/cube_generator.hpp"
-#include "../shapeGenerator/hollow_cube_generator.hpp"
 
 namespace Sculptor {
 class MatrixApplierBase;
 class glObject;
 class glInstancedObject;
-class KdTreeConstructor;
-class KdTreeRemover;
 
 class CubeSculptingMaterial {
  public:

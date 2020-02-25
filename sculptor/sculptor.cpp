@@ -17,8 +17,6 @@
 #include "../drill/drill.hpp"
 #include "../glInstancedObject/gl_instanced_object.hpp"
 #include "../glObject/gl_object.hpp"
-#include "../kdtreeConstructor/kdtree_cpu_std_constructor.hpp"
-#include "../kdtreeRemover/kdtree_gpu_remover.hpp"
 #include "../light/directional_light.hpp"
 #include "../light/point_light.hpp"
 #include "../light/spotlight.hpp"
@@ -86,7 +84,7 @@ int Sculptor::Main() {
           base + "shader/phong/phong_fragment_shader.fs"),
       std::make_unique<MatrixApplier>(),
       std::make_unique<PNGTextureProvider>(base + "texture/cube.png"),
-      glm::vec4{1.0, 0.5, 1, 200.0});
+      glm::vec4{1.0, 0.5, 1.0, 200.0});
 
   CubeSculptingMaterial material(ncubes, std::move(cube),
                                  std::make_unique<MatrixApplier>());
@@ -118,7 +116,7 @@ int Sculptor::Main() {
           glm::vec3{0.0, 0.0, 0.0}, glm::vec2{0.7, 0.6}),
       std::make_unique<PointLight>(
           glm::vec3{0.0, 0.0, 0.0}, glm::vec3{5.0, 5.0, 5.0},
-          glm::vec3{5.0, 5.0, 5.0}, glm::vec3{0, -1.5, 0},
+          glm::vec3{5.0, 5.0, 5.0}, glm::vec3{-2.0, -2.0, -2.0},
           glm::vec3{1.0, 1.5, 2.0}),
   };
 

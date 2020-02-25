@@ -12,16 +12,13 @@
 
 namespace Sculptor {
 class MatrixApplierBase;
-class ShapeGeneratorBase;
 class glObject;
 class ShaderProgramBase;
 
 class glInstancedObject {
  public:
-  glInstancedObject(int ninstances_init,
-                    int ninstances_max,
+  glInstancedObject(int ninstances_max,
                     std::unique_ptr<glObject> reference_model,
-                    std::unique_ptr<ShapeGeneratorBase> shape_generator,
                     std::unique_ptr<MatrixApplierBase> matrix_applier);
   ~glInstancedObject();
 
@@ -40,8 +37,8 @@ class glInstancedObject {
 
  private:
   std::unique_ptr<glObject> reference_model_;
-  std::unique_ptr<ShapeGeneratorBase> shape_generator_;
   CudaGraphicsResource<glm::mat4> model_transforms_;
+  CudaGraphicsResource<glm::mat4> ti_model_transforms_;
   std::unique_ptr<MatrixApplierBase> matrix_applier_;
 };
 }  // namespace Sculptor

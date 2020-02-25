@@ -8,10 +8,7 @@
 
 #include "../glInstancedObject/gl_instanced_object.hpp"
 #include "../glObject/gl_object.hpp"
-#include "../kdtreeConstructor/kdtree_constructor_base.hpp"
-#include "../kdtreeRemover/kdtree_remover_base.hpp"
 #include "../matrixApplier/matrix_applier.hpp"
-#include "../shapeGenerator/shape_generator_base.hpp"
 
 namespace Sculptor {
 CubeSculptingMaterial::CubeSculptingMaterial(
@@ -20,10 +17,8 @@ CubeSculptingMaterial::CubeSculptingMaterial(
     std::unique_ptr<MatrixApplierBase> matrix_applier)
     : side_len_(2.f / ncubes_per_side),
       visible_material_(std::make_unique<glInstancedObject>(
-          0,
           ncubes_per_side * ncubes_per_side * ncubes_per_side,
           std::move(reference_model),
-          std::make_unique<HollowCubeGenerator>(side_len_),
           matrix_applier->Clone())),
       material_x_(ncubes_per_side * ncubes_per_side * ncubes_per_side),
       material_y_(ncubes_per_side * ncubes_per_side * ncubes_per_side),
