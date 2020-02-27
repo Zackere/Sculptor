@@ -30,7 +30,10 @@ class glInstancedObject {
     return model_transforms_;
   }
 
-  void AddInstances(std::vector<glm::vec3> const& instances);
+  int AddInstance(glm::mat4 const& instance);
+  void PopInstance();
+  unsigned SetInstance(glm::mat4 const& new_instance, unsigned index);
+  glm::mat4 GetTransformAt(unsigned index);
 
   void SetShader(std::unique_ptr<ShaderProgramBase> shader);
   ShaderProgramBase* GetShader();

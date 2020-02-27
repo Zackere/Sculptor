@@ -22,6 +22,7 @@
 #include "../light/spotlight.hpp"
 #include "../matrixApplier/matrix_applier.hpp"
 #include "../modelProvider/obj_provider.hpp"
+#include "../sculptingMaterial/collision_algorithm_cpu.hpp"
 #include "../sculptingMaterial/cube_sculpting_material.hpp"
 #include "../shaderProgram/shader_program.hpp"
 #include "../textureProvider/png_texture_provider.hpp"
@@ -76,7 +77,7 @@ int Sculptor::Main() {
   glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
   glClearColor(44.0f / 255.0f, 219.0f / 255.0f, 216.0f / 255.0f, 0.0f);
   std::string base = "../Sculptor/";
-  constexpr int ncubes = 100;
+  constexpr int ncubes = 7;
   std::unique_ptr<glObject> cube = std::make_unique<glObject>(
       std::make_unique<ObjProvider>(base + "model/cube.obj"),
       std::make_unique<ShaderProgram>(
@@ -87,15 +88,16 @@ int Sculptor::Main() {
       glm::vec4{1.0, 0.5, 1.0, 200.0});
 
   CubeSculptingMaterial material(ncubes, std::move(cube),
-                                 std::make_unique<MatrixApplier>());
+                                 std::make_unique<MatrixApplier>(),
+                                 std::make_unique<CollisionAlgorithmCPU>());
 
   std::unique_ptr<glObject> drill_model = std::make_unique<glObject>(
-      std::make_unique<ObjProvider>(base + "model/drill.obj"),
+      std::make_unique<ObjProvider>(base + "model/cube.obj"),
       std::make_unique<ShaderProgram>(
           base + "shader/phong/phong_vertex_shader.vs",
           base + "shader/phong/phong_fragment_shader.fs"),
       std::make_unique<MatrixApplier>(),
-      std::make_unique<PNGTextureProvider>(base + "texture/drill.png"),
+      std::make_unique<PNGTextureProvider>(base + "texture/cube.png"),
       glm::vec4{1.0, 0.4, 1.0, 10.0});
   drill_model->Transform(
       glm::scale(glm::mat4(1.f), glm::vec3(0.02, 0.02, 0.02)));

@@ -56,11 +56,26 @@ void glInstancedObject::Transform(glm::mat4 const& m) {
   matrix_applier_->Apply(ti_model_transforms_, glm::transpose(glm::inverse(m)));
 }
 
-void glInstancedObject::AddInstances(std::vector<glm::vec3> const& instances) {
-  for (auto& v : instances) {
-    model_transforms_.PushBack(glm::translate(glm::mat4(1.f), v));
-    ti_model_transforms_.PushBack(glm::mat4(1.f));
-  }
+int glInstancedObject::AddInstance(const glm::mat4& instance) {
+  model_transforms_.PushBack(instance);
+  ti_model_transforms_.PushBack(glm::transpose(glm::inverse(instance)));
+  return model_transforms_.GetSize() - 1;
+}
+
+void glInstancedObject::PopInstance() {
+  model_transforms_.PopBack();
+  ti_model_transforms_.PopBack();
+}
+
+unsigned glInstancedObject::SetInstance(glm::mat4 const& new_instance,
+                                        unsigned index) {
+  model_transforms_.Set(new_instance, index);
+  ti_model_transforms_.Set(glm::transpose(glm::inverse(new_instance)), index);
+  return index;
+}
+
+glm::mat4 glInstancedObject::GetTransformAt(unsigned index) {
+  return model_transforms_.Get(index);
 }
 
 void glInstancedObject::SetShader(std::unique_ptr<ShaderProgramBase> shader) {
