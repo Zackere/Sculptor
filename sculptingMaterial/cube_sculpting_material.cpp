@@ -2,90 +2,134 @@
 
 #include "cube_sculpting_material.hpp"
 
+#include <algorithm>
+#include <functional>
 #include <glm/gtc/matrix_transform.hpp>
+#include <limits>
 #include <utility>
 #include <vector>
 
 #include "../glInstancedObject/gl_instanced_object.hpp"
 #include "../glObject/gl_object.hpp"
 #include "../matrixApplier/matrix_applier.hpp"
+#include "../modelProvider/obj_provider.hpp"
+#include "../shaderProgram/shader_program.hpp"
+#include "../textureProvider/png_texture_provider.hpp"
 
 namespace Sculptor {
-CubeSculptingMaterial::CubeSculptingMaterial(
+namespace {
+constexpr float kEps = 0.001;
+
+float Len(glm::vec3 const& v) {
+  return std::max(std::abs(v.x), std::max(std::abs(v.y), std::abs(v.z)));
+}
+}  // namespace
+CubeSculptingMaterialCPU::CubeSculptingMaterialCPU(
     unsigned ncubes_per_side,
-    std::unique_ptr<glObject> reference_model,
-    std::unique_ptr<MatrixApplierBase> matrix_applier,
-    std::unique_ptr<CollisionAlgorithm> collision_algorithm)
-    : max_cubes_per_side(1 << ncubes_per_side),
-      max_depth_(3 * ncubes_per_side),
-      visible_material_(
-          std::make_unique<glInstancedObject>(1 << (3 * ncubes_per_side),
-                                              std::move(reference_model),
-                                              std::move(matrix_applier))),
-      collision_algorithm_(std::move(collision_algorithm)) {
+    std::unique_ptr<MatrixApplierBase> matrix_applier)
+    : SculptingMaterial(std::make_unique<glInstancedObject>(
+          1 << (3 * ncubes_per_side),
+          std::make_unique<glObject>(
+              std::make_unique<ObjProvider>("../Sculptor/model/cube.obj"),
+              std::make_unique<ShaderProgram>(
+                  "../Sculptor/shader/phong/instanced_phong_vertex_shader.vs",
+                  "../Sculptor/shader/phong/phong_fragment_shader.fs"),
+              std::make_unique<MatrixApplier>(),
+              std::make_unique<PNGTextureProvider>(
+                  "../Sculptor/texture/cube.png"),
+              glm::vec4{1.0, 0.5, 1.0, 200.0}),
+          std::move(matrix_applier))),
+      max_cubes_per_side(1 << ncubes_per_side),
+      max_depth_(3 * ncubes_per_side) {
   glm::vec3 initial_pos = {0.0, 0.0, 0.0};
-  visible_material_->AddInstance(glm::translate(glm::mat4(1.f), initial_pos));
+  GetObject().AddInstance(glm::translate(glm::mat4(1.f), initial_pos));
   kd_tree_root_.reset(new Node{nullptr, nullptr, 0, 0u});
-  collision_algorithm_->SetTree(kd_tree_root_.get());
 }
 
-CubeSculptingMaterial::~CubeSculptingMaterial() = default;
+CubeSculptingMaterialCPU::~CubeSculptingMaterialCPU() = default;
 
-void CubeSculptingMaterial::Render(glm::mat4 const& vp) {
-  visible_material_->Render(vp);
+void CubeSculptingMaterialCPU::CollideWith(glObject& object) {
+  object.Transform(glm::inverse(GetObject().GetGlobalTransform()));
+
+  Node* current_nearest_node = nullptr;
+  float best_distance = std::numeric_limits<float>::infinity();
+  glm::vec3 query_point, current_nearest;
+  std::function<void(int, Node*)> algorithm;
+  algorithm = [&algorithm, &query_point, &current_nearest_node, &best_distance,
+               &current_nearest, material = this, this](int depth, Node* root) {
+    if (auto* i = std::get_if<unsigned>(&root->v)) {
+      if (depth > 0) {
+        root->Subdivide(material, GetObject());
+      } else {
+        auto m = GetObject().GetTransformAt(*i);
+        auto p = glm::vec3(m * glm::vec4{0, 0, 0, 1});
+        auto dist = Len(query_point - p);
+        if (best_distance > dist) {
+          best_distance = dist;
+          current_nearest = p;
+          current_nearest_node = root;
+        }
+        return;
+      }
+    }
+    auto diff = reinterpret_cast<float*>(&query_point)[root->axis] -
+                std::get<float>(root->v);
+    if (diff >= -kEps) {
+      if (root->r)
+        algorithm(depth - 1, root->r.get());
+      if (root->l && best_distance > diff)
+        algorithm(depth - 1, root->l.get());
+    }
+    if (diff <= kEps) {
+      if (root->l)
+        algorithm(depth - 1, root->l.get());
+      if (root->r && best_distance > -diff)
+        algorithm(depth - 1, root->r.get());
+    }
+  };
+  for (auto& p : object.GetVertices()->ToStdVector()) {
+    query_point = p;
+    current_nearest_node = nullptr;
+    best_distance = std::numeric_limits<float>::infinity();
+    algorithm(GetMaxDepth(), kd_tree_root_.get());
+    if (ShouldRemoveNode(best_distance))
+      current_nearest_node->Remove(this);
+  }
+
+  object.Transform(GetObject().GetGlobalTransform());
 }
 
-void CubeSculptingMaterial::Rotate(float amount) {
-  visible_material_->Transform(
-      glm::rotate(glm::mat4(1.f), amount, glm::vec3(0, 1, 0)));
-}
-
-void CubeSculptingMaterial::Collide(glObject& object) {
-  object.Transform(glm::inverse(visible_material_->GetGlobalTransform()));
-  collision_algorithm_->Run(this, object);
-  object.Transform(visible_material_->GetGlobalTransform());
-}
-
-glInstancedObject& CubeSculptingMaterial::GetObject() {
-  return *visible_material_;
-}
-
-void CubeSculptingMaterial::OnNodeCreated(CubeSculptingMaterial::Node* node) {
+void CubeSculptingMaterialCPU::OnNodeCreated(
+    CubeSculptingMaterialCPU::Node* node) {
   if (auto* i = std::get_if<unsigned>(&node->v))
     index_to_node_[*i] = node;
 }
 
-void CubeSculptingMaterial::OnNodeDeleted(CubeSculptingMaterial::Node* node) {
+void CubeSculptingMaterialCPU::OnNodeDeleted(
+    CubeSculptingMaterialCPU::Node* node) {
   if (auto* i = std::get_if<unsigned>(&node->v)) {
-    auto it = index_to_node_.find(
-        visible_material_->GetModelTransforms().GetSize() - 1);
-    if (*i + 1 != visible_material_->GetModelTransforms().GetSize()) {
-      auto m = visible_material_->GetTransformAt(
-          visible_material_->GetModelTransforms().GetSize() - 1);
+    auto it =
+        index_to_node_.find(GetObject().GetModelTransforms().GetSize() - 1);
+    if (*i + 1 != GetObject().GetModelTransforms().GetSize()) {
+      auto m = GetObject().GetTransformAt(
+          GetObject().GetModelTransforms().GetSize() - 1);
       auto* n = it->second;
-      visible_material_->SetInstance(m, *i);
+      GetObject().SetInstance(m, *i);
       n->v = *i;
       index_to_node_[*i] = n;
     }
     index_to_node_.erase(it);
-    visible_material_->PopInstance();
+    GetObject().PopInstance();
   }
 }
 
-bool CubeSculptingMaterial::ShouldRemoveNode(float distance) {
+bool CubeSculptingMaterialCPU::ShouldRemoveNode(float distance) {
   return distance <= 1.1f / max_cubes_per_side;
 }
 
-CubeSculptingMaterial::Node* CubeSculptingMaterial::CollisionAlgorithm::SetTree(
-    CubeSculptingMaterial::Node* tree) {
-  auto* ret = tree_;
-  tree_ = tree;
-  return ret;
-}
-
-CubeSculptingMaterial::Node::Node(
-    std::unique_ptr<CubeSculptingMaterial::Node> left,
-    std::unique_ptr<CubeSculptingMaterial::Node> right,
+CubeSculptingMaterialCPU::Node::Node(
+    std::unique_ptr<CubeSculptingMaterialCPU::Node> left,
+    std::unique_ptr<CubeSculptingMaterialCPU::Node> right,
     unsigned ax,
     std::variant<unsigned, float> i)
     : l(std::move(left)), r(std::move(right)), axis(ax), v(i) {
@@ -95,8 +139,9 @@ CubeSculptingMaterial::Node::Node(
     r->parent_ = this;
 }
 
-void CubeSculptingMaterial::Node::Subdivide(CubeSculptingMaterial* material) {
-  auto& tree = material->GetObject();
+void CubeSculptingMaterialCPU::Node::Subdivide(
+    CubeSculptingMaterialCPU* material,
+    glInstancedObject& tree) {
   auto m_original = tree.GetTransformAt(std::get<unsigned>(v));
   auto scale = glm::scale(glm::mat4(1.f), glm::vec3{0.5, 0.5, 0.5});
   auto middle = m_original * glm::vec4{0, 0, 0, 1};
@@ -171,13 +216,14 @@ void CubeSculptingMaterial::Node::Subdivide(CubeSculptingMaterial* material) {
   material->OnNodeCreated(r.get());
 }
 
-void CubeSculptingMaterial::Node::Remove(CubeSculptingMaterial* material) {
+void CubeSculptingMaterialCPU::Node::Remove(
+    CubeSculptingMaterialCPU* material) {
   parent_->RemoveChild(material, this);
 }
 
-void CubeSculptingMaterial::Node::RemoveChild(
-    CubeSculptingMaterial* material,
-    CubeSculptingMaterial::Node* node) {
+void CubeSculptingMaterialCPU::Node::RemoveChild(
+    CubeSculptingMaterialCPU* material,
+    CubeSculptingMaterialCPU::Node* node) {
   material->OnNodeDeleted(node);
   if (l.get() == node)
     l = nullptr;

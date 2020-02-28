@@ -13,9 +13,9 @@
 
 namespace Sculptor {
 class ModelProviderBase;
-class ShaderProgramBase;
 class TextureProviderBase;
 class MatrixApplierBase;
+class ShaderProgramBase;
 
 class glObject {
  public:
@@ -30,8 +30,6 @@ class glObject {
   void Transform(glm::mat4 const& m);
   void Enable() const;
 
-  ShaderProgramBase* GetShader();
-  auto GetTexture() const { return texture_; }
   auto GetNumberOfModelVertices() const {
     return model_parameters_.verticies->GetSize();
   }
@@ -40,6 +38,16 @@ class glObject {
 
   std::unique_ptr<ShaderProgramBase> SetShader(
       std::unique_ptr<ShaderProgramBase> shader);
+  ShaderProgramBase* GetShader();
+
+  template <typename T>
+  void Load(T* t) {
+    t->LoadIntoShader(shader_.get());
+  }
+  template <typename T>
+  void Unload(T* t) {
+    t->UnloadFromShader(shader_.get());
+  }
 
  private:
   struct {

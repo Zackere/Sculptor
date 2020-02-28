@@ -19,6 +19,7 @@ class LightBase {
 
   virtual ~LightBase() = 0;
   virtual void LoadIntoShader(ShaderProgramBase* shader);
+  virtual void UnloadFromShader(ShaderProgramBase* shader);
   void Enable(ShaderProgramBase* shader);
   void Disable(ShaderProgramBase* shader);
 

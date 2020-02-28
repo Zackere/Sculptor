@@ -8,8 +8,10 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <memory>
+#include <set>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "../camera/basic_camera.hpp"
 #include "../camera/follower_camera.hpp"
@@ -22,7 +24,6 @@
 #include "../light/spotlight.hpp"
 #include "../matrixApplier/matrix_applier.hpp"
 #include "../modelProvider/obj_provider.hpp"
-#include "../sculptingMaterial/collision_algorithm_cpu.hpp"
 #include "../sculptingMaterial/cube_sculpting_material.hpp"
 #include "../shaderProgram/shader_program.hpp"
 #include "../textureProvider/png_texture_provider.hpp"
@@ -40,6 +41,12 @@ void OnResize(GLFWwindow*, int width, int height) {
   glViewport(0, 0, window_properties.width = width,
              window_properties.height = height);
   window_properties.aspect = window_properties.width / window_properties.height;
+}
+
+std::set<int> keys_pressed = {};
+void OnKeyPressed(GLFWwindow*, int key, int, int action, int) {
+  if (action == GLFW_PRESS)
+    keys_pressed.insert(key);
 }
 }  // namespace
 Sculptor::Sculptor() {
@@ -65,6 +72,7 @@ int Sculptor::Main() {
   if (glewInit() != GLEW_OK)
     return -1;
   glfwSetWindowSizeCallback(window, OnResize);
+  glfwSetKeyCallback(window, OnKeyPressed);
   const auto is_key_pressed = [window](int key) {
     return glfwGetKey(window, key) == GLFW_PRESS;
   };
@@ -78,19 +86,10 @@ int Sculptor::Main() {
   glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
   glClearColor(44.0f / 255.0f, 219.0f / 255.0f, 216.0f / 255.0f, 0.0f);
   std::string base = "../Sculptor/";
-  constexpr int ncubes = 7;
-  std::unique_ptr<glObject> cube = std::make_unique<glObject>(
-      std::make_unique<ObjProvider>(base + "model/cube.obj"),
-      std::make_unique<ShaderProgram>(
-          base + "shader/phong/instanced_phong_vertex_shader.vs",
-          base + "shader/phong/phong_fragment_shader.fs"),
-      std::make_unique<MatrixApplier>(),
-      std::make_unique<PNGTextureProvider>(base + "texture/cube.png"),
-      glm::vec4{1.0, 0.5, 1.0, 200.0});
-
-  CubeSculptingMaterial material(ncubes, std::move(cube),
-                                 std::make_unique<MatrixApplier>(),
-                                 std::make_unique<CollisionAlgorithmCPU>());
+  constexpr int ncubes = 6;
+  std::unique_ptr<SculptingMaterial> material =
+      std::make_unique<CubeSculptingMaterialCPU>(
+          ncubes, std::make_unique<MatrixApplier>());
 
   std::unique_ptr<glObject> drill_model = std::make_unique<glObject>(
       std::make_unique<ObjProvider>(base + "model/cube.obj"),
@@ -119,7 +118,7 @@ int Sculptor::Main() {
       glm::vec3{0.0, 0.0, 0.0}, glm::vec2{0.7, 0.6}));
   day_lights.push_back(std::make_unique<PointLight>(
       glm::vec3{0.0, 0.0, 0.0}, glm::vec3{5.0, 5.0, 5.0},
-      glm::vec3{5.0, 5.0, 5.0}, glm::vec3{-2.0, -2.0, -2.0},
+      glm::vec3{5.0, 5.0, 5.0}, glm::vec3{0.0, -2.0, 0.0},
       glm::vec3{1.0, 1.5, 2.0}));
   std::vector<std::unique_ptr<LightBase>> night_lights;
   night_lights.push_back(std::make_unique<DirectionalLight>(
@@ -131,7 +130,7 @@ int Sculptor::Main() {
       glm::vec3{0.0, 0.0, 0.0}, glm::vec2{0.7, 0.6}));
   night_lights.push_back(std::make_unique<PointLight>(
       glm::vec3{0.0, 0.0, 0.0}, glm::vec3{5.0, 5.0, 5.0},
-      glm::vec3{5.0, 5.0, 5.0}, glm::vec3{-2.0, -2.0, -2.0},
+      glm::vec3{5.0, 5.0, 5.0}, glm::vec3{0.0, -2.0, 0.0},
       glm::vec3{1.0, 1.5, 2.0}));
   std::vector<std::unique_ptr<LightBase>> const* active_lights = &day_lights;
 
@@ -143,14 +142,43 @@ int Sculptor::Main() {
   do {
     glfwPollEvents();
 
+    for (auto k : keys_pressed) {
+      switch (k) {
+        case GLFW_KEY_N:
+          for (auto const& light : *active_lights) {
+            light->Disable(drill.GetObject().GetShader());
+            material->GetObject().Unload(light.get());
+          }
+          if (active_lights == &day_lights) {
+            active_lights = &night_lights;
+            glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+          } else if (active_lights == &night_lights) {
+            active_lights = &day_lights;
+            glClearColor(44.0f / 255.0f, 219.0f / 255.0f, 216.0f / 255.0f,
+                         0.0f);
+          }
+          break;
+        case GLFW_KEY_1:
+          active_camera = &static_camera;
+          break;
+        case GLFW_KEY_2:
+          active_camera = &follower_camera;
+          break;
+        case GLFW_KEY_3:
+          active_camera = &thrid_person_camera;
+          break;
+      }
+    }
+    keys_pressed.clear();
+
     if (is_key_pressed(GLFW_KEY_LEFT))
-      material.Rotate(-0.01f);
+      material->GetObject().Transform(glm::rotate(glm::mat4(1.f), -0.01f, kUp));
     else if (is_key_pressed(GLFW_KEY_RIGHT))
-      material.Rotate(0.01f);
-    if (is_key_pressed(GLFW_KEY_UP))
-      active_camera->Zoom(0.1f);
-    else if (is_key_pressed(GLFW_KEY_DOWN))
+      material->GetObject().Transform(glm::rotate(glm::mat4(1.f), 0.01f, kUp));
+    if (is_key_pressed(GLFW_KEY_DOWN))
       active_camera->Zoom(-0.1f);
+    else if (is_key_pressed(GLFW_KEY_UP))
+      active_camera->Zoom(0.1f);
     if (is_key_pressed(GLFW_KEY_W))
       drill.MoveForward();
     else if (is_key_pressed(GLFW_KEY_S))
@@ -159,25 +187,6 @@ int Sculptor::Main() {
       drill.MoveUp();
     else if (is_key_pressed(GLFW_KEY_Q))
       drill.MoveDown();
-    if (is_key_pressed(GLFW_KEY_1))
-      active_camera = &static_camera;
-    else if (is_key_pressed(GLFW_KEY_2))
-      active_camera = &follower_camera;
-    else if (is_key_pressed(GLFW_KEY_3))
-      active_camera = &thrid_person_camera;
-    if (is_key_pressed(GLFW_KEY_N)) {
-      for (auto const& light : *active_lights) {
-        light->Disable(drill.GetObject().GetShader());
-        light->Disable(material.GetObject().GetShader());
-      }
-      if (active_lights == &day_lights) {
-        active_lights = &night_lights;
-        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-      } else if (active_lights == &night_lights) {
-        active_lights = &day_lights;
-        glClearColor(44.0f / 255.0f, 219.0f / 255.0f, 216.0f / 255.0f, 0.0f);
-      }
-    }
 
     glfwGetCursorPos(window, &cur_mouse_pos_x, &cur_mouse_pos_y);
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
@@ -186,23 +195,21 @@ int Sculptor::Main() {
     old_mouse_pos_x = cur_mouse_pos_x;
     old_mouse_pos_y = cur_mouse_pos_y;
 
-    glm::mat4 projection = glm::perspective(
-        glm::radians(45.0f), window_properties.aspect, 0.1f, 10.0f);
-    auto vp = projection * active_camera->GetTransform();
-
     drill.Spin();
-    material.Collide(drill.GetObject());
+    material->CollideWith(drill.GetObject());
 
     for (auto const& light : *active_lights) {
       light->LoadIntoShader(drill.GetObject().GetShader());
-      light->LoadIntoShader(material.GetObject().GetShader());
+      material->GetObject().Load(light.get());
     }
     active_camera->LoadIntoShader(drill.GetObject().GetShader());
-    active_camera->LoadIntoShader(material.GetObject().GetShader());
+    material->GetObject().Load(active_camera);
 
+    glm::mat4 const projection = glm::perspective(
+        glm::radians(45.0f), window_properties.aspect, 0.1f, 10.0f);
+    auto vp = projection * active_camera->GetTransform();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    material.Render(vp);
+    material->GetObject().Render(vp);
     drill.Render(vp);
 
     glfwSwapBuffers(window);
@@ -211,5 +218,5 @@ int Sculptor::Main() {
 
   main_running = false;
   return 0;
-}
+}  // namespace Sculptor
 }  // namespace Sculptor

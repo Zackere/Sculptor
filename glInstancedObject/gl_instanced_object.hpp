@@ -9,10 +9,10 @@
 #include <vector>
 
 #include "../cudaGraphics/cudaGraphicsResource/cuda_graphics_resource.hpp"
+#include "../glObject/gl_object.hpp"
 
 namespace Sculptor {
 class MatrixApplierBase;
-class glObject;
 class ShaderProgramBase;
 
 class glInstancedObject {
@@ -24,6 +24,14 @@ class glInstancedObject {
 
   void Render(glm::mat4 const& vp) const;
   void Transform(glm::mat4 const& m);
+  template <class T>
+  void Load(T* t) {
+    reference_model_->Load(t);
+  }
+  template <class T>
+  void Unload(T* t) {
+    reference_model_->Unload(t);
+  }
 
   int GetNumberOfInstances() const { return model_transforms_.GetSize(); }
   CudaGraphicsResource<glm::mat4>& GetModelTransforms() {
@@ -38,7 +46,6 @@ class glInstancedObject {
 
   std::unique_ptr<ShaderProgramBase> SetShader(
       std::unique_ptr<ShaderProgramBase> shader);
-  ShaderProgramBase* GetShader();
 
  private:
   std::unique_ptr<glObject> reference_model_;

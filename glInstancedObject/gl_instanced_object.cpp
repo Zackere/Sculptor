@@ -6,7 +6,6 @@
 #include <utility>
 #include <vector>
 
-#include "../glObject/gl_object.hpp"
 #include "../matrixApplier/matrix_applier_base.hpp"
 #include "../modelProvider/model_provider_base.hpp"
 #include "../shaderProgram/shader_program_base.hpp"
@@ -52,7 +51,6 @@ void glInstancedObject::Render(glm::mat4 const& vp) const {
   glUniformMatrix4fv(glGetUniformLocation(reference_model_->GetShader()->Get(),
                                           "i_global_transform"),
                      1, GL_FALSE, &i_global_transform[0][0]);
-  glBindTexture(GL_TEXTURE_2D, reference_model_->GetTexture());
   glDrawArraysInstanced(GL_TRIANGLES, 0,
                         reference_model_->GetNumberOfModelVertices(),
                         GetNumberOfInstances());
@@ -88,9 +86,4 @@ std::unique_ptr<ShaderProgramBase> glInstancedObject::SetShader(
     std::unique_ptr<ShaderProgramBase> shader) {
   return reference_model_->SetShader(std::move(shader));
 }
-
-ShaderProgramBase* glInstancedObject::GetShader() {
-  return reference_model_->GetShader();
-}
-
 }  // namespace Sculptor

@@ -70,15 +70,15 @@ void glObject::Enable() const {
   glBindTexture(GL_TEXTURE_2D, texture_);
 }
 
-ShaderProgramBase* glObject::GetShader() {
-  return shader_.get();
-}
-
 std::unique_ptr<ShaderProgramBase> glObject::SetShader(
     std::unique_ptr<ShaderProgramBase> shader) {
   auto ret = std::move(shader_);
   shader_ = std::move(shader);
   return ret;
+}
+
+ShaderProgramBase* glObject::GetShader() {
+  return shader_.get();
 }
 
 void glObject::Render(glm::mat4 const& vp) const {

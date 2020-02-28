@@ -41,6 +41,10 @@ void LightBase::LoadIntoShader(ShaderProgramBase* shader) {
   Enable(shader);
 }
 
+void LightBase::UnloadFromShader(ShaderProgramBase* shader) {
+  Disable(shader);
+}
+
 void LightBase::Enable(ShaderProgramBase* shader) {
   glUseProgram(shader->Get());
   glUniform1i(glGetUniformLocation(
