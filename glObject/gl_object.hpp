@@ -38,7 +38,8 @@ class glObject {
   auto GetAvgPosition() const { return average_pos_; }
   auto* GetVertices() { return model_parameters_.verticies.get(); }
 
-  void SetShader(std::unique_ptr<ShaderProgramBase> shader);
+  std::unique_ptr<ShaderProgramBase> SetShader(
+      std::unique_ptr<ShaderProgramBase> shader);
 
  private:
   struct {

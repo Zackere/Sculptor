@@ -7,7 +7,7 @@ struct DirectionalLight{
     vec3 specular;
     bool enabled;
 };
-#define NDIRECTIONALLIGHTS 1
+#define NDIRECTIONALLIGHTS 2
 uniform DirectionalLight SculptorDirectionalLight[NDIRECTIONALLIGHTS];
 
 struct PointLight{
@@ -73,7 +73,7 @@ vec3 CalculateDirectionalLightContribution(vec3 normal, vec3 eye_dir) {
 
         ret += light_coefficient.x * SculptorDirectionalLight[i].ambient
              + light_coefficient.y * SculptorDirectionalLight[i].diffuse * diff_cos
-             + light_coefficient.z * SculptorDirectionalLight[i].specular * (diff_cos > 0 ? spec_cos : 0);
+             + light_coefficient.z * SculptorDirectionalLight[i].specular * (diff_cos > 0 ? spec_cos : 0.0);
     }
     return ret;
 }

@@ -74,8 +74,11 @@ ShaderProgramBase* glObject::GetShader() {
   return shader_.get();
 }
 
-void glObject::SetShader(std::unique_ptr<ShaderProgramBase> shader) {
+std::unique_ptr<ShaderProgramBase> glObject::SetShader(
+    std::unique_ptr<ShaderProgramBase> shader) {
+  auto ret = std::move(shader_);
   shader_ = std::move(shader);
+  return ret;
 }
 
 void glObject::Render(glm::mat4 const& vp) const {

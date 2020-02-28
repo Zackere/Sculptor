@@ -86,7 +86,5 @@ class CubeSculptingMaterial {
   unsigned max_depth_;
   std::unique_ptr<glInstancedObject> visible_material_;
   std::unique_ptr<CollisionAlgorithm> collision_algorithm_;
-
-  glm::mat4 global_transform_ = glm::mat4(1.f);
 };
 }  // namespace Sculptor

@@ -19,7 +19,7 @@ glInstancedObject::glInstancedObject(
     std::unique_ptr<MatrixApplierBase> matrix_applier)
     : reference_model_(std::move(reference_model)),
       model_transforms_(ninstances_max),
-      ti_model_transforms_(ninstances_max),
+      i_model_transforms_(ninstances_max),
       matrix_applier_(std::move(matrix_applier)) {
   auto assign_transforms = [this](char const* name,
                                   CudaGraphicsResource<glm::mat4>& buf) {
@@ -35,7 +35,7 @@ glInstancedObject::glInstancedObject(
   };
 
   assign_transforms("model_transform", model_transforms_);
-  assign_transforms("ti_model_transform", ti_model_transforms_);
+  assign_transforms("i_model_transform", i_model_transforms_);
 }
 
 glInstancedObject::~glInstancedObject() = default;
@@ -45,6 +45,13 @@ void glInstancedObject::Render(glm::mat4 const& vp) const {
   glUniformMatrix4fv(
       glGetUniformLocation(reference_model_->GetShader()->Get(), "vp"), 1,
       GL_FALSE, &vp[0][0]);
+  glUniformMatrix4fv(glGetUniformLocation(reference_model_->GetShader()->Get(),
+                                          "global_transform"),
+                     1, GL_FALSE, &global_transform_[0][0]);
+  auto i_global_transform = glm::inverse(global_transform_);
+  glUniformMatrix4fv(glGetUniformLocation(reference_model_->GetShader()->Get(),
+                                          "i_global_transform"),
+                     1, GL_FALSE, &i_global_transform[0][0]);
   glBindTexture(GL_TEXTURE_2D, reference_model_->GetTexture());
   glDrawArraysInstanced(GL_TRIANGLES, 0,
                         reference_model_->GetNumberOfModelVertices(),
@@ -52,25 +59,24 @@ void glInstancedObject::Render(glm::mat4 const& vp) const {
 }
 
 void glInstancedObject::Transform(glm::mat4 const& m) {
-  matrix_applier_->Apply(model_transforms_, m);
-  matrix_applier_->Apply(ti_model_transforms_, glm::transpose(glm::inverse(m)));
+  global_transform_ = m * global_transform_;
 }
 
 int glInstancedObject::AddInstance(const glm::mat4& instance) {
   model_transforms_.PushBack(instance);
-  ti_model_transforms_.PushBack(glm::transpose(glm::inverse(instance)));
+  i_model_transforms_.PushBack(glm::inverse(instance));
   return model_transforms_.GetSize() - 1;
 }
 
 void glInstancedObject::PopInstance() {
   model_transforms_.PopBack();
-  ti_model_transforms_.PopBack();
+  i_model_transforms_.PopBack();
 }
 
 unsigned glInstancedObject::SetInstance(glm::mat4 const& new_instance,
                                         unsigned index) {
   model_transforms_.Set(new_instance, index);
-  ti_model_transforms_.Set(glm::transpose(glm::inverse(new_instance)), index);
+  i_model_transforms_.Set(glm::inverse(new_instance), index);
   return index;
 }
 
@@ -78,8 +84,9 @@ glm::mat4 glInstancedObject::GetTransformAt(unsigned index) {
   return model_transforms_.Get(index);
 }
 
-void glInstancedObject::SetShader(std::unique_ptr<ShaderProgramBase> shader) {
-  reference_model_->SetShader(std::move(shader));
+std::unique_ptr<ShaderProgramBase> glInstancedObject::SetShader(
+    std::unique_ptr<ShaderProgramBase> shader) {
+  return reference_model_->SetShader(std::move(shader));
 }
 
 ShaderProgramBase* glInstancedObject::GetShader() {

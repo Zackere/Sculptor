@@ -34,14 +34,18 @@ class glInstancedObject {
   void PopInstance();
   unsigned SetInstance(glm::mat4 const& new_instance, unsigned index);
   glm::mat4 GetTransformAt(unsigned index);
+  glm::mat4 GetGlobalTransform() const { return global_transform_; }
 
-  void SetShader(std::unique_ptr<ShaderProgramBase> shader);
+  std::unique_ptr<ShaderProgramBase> SetShader(
+      std::unique_ptr<ShaderProgramBase> shader);
   ShaderProgramBase* GetShader();
 
  private:
   std::unique_ptr<glObject> reference_model_;
   CudaGraphicsResource<glm::mat4> model_transforms_;
-  CudaGraphicsResource<glm::mat4> ti_model_transforms_;
+  CudaGraphicsResource<glm::mat4> i_model_transforms_;
   std::unique_ptr<MatrixApplierBase> matrix_applier_;
+
+  glm::mat4 global_transform_ = glm::mat4(1.f);
 };
 }  // namespace Sculptor

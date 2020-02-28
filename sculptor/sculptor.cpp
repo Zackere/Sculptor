@@ -31,6 +31,7 @@ namespace Sculptor {
 namespace {
 bool main_running = false;
 const glm::vec3 kUp{0.f, 1.f, 0.f};
+
 struct {
   float width = 2 * 1280.f, height = 2 * 960.f;
   float aspect = width / height;
@@ -108,19 +109,31 @@ int Sculptor::Main() {
   ThirdPersonCamera thrid_person_camera({0.6, 0.2, 0}, &drill.GetObject(), kUp);
   Camera* active_camera = &static_camera;
 
-  std::unique_ptr<LightBase> lights[] = {
-      std::make_unique<DirectionalLight>(
-          glm::vec3{0.3, 0.3, 0.3}, glm::vec3{1.0, 1.0, 1.0},
-          glm::vec3{1.0, 1.0, 1.0}, glm::vec3{3.0, 3.0, 3.0}),
-      std::make_unique<Spotlight>(
-          glm::vec3{0.0, 0.0, 0.0}, glm::vec3{5.0, 5.0, 5.0},
-          glm::vec3{5.0, 5.0, 5.0}, glm::vec3{1.2, 1.2, 1.2},
-          glm::vec3{0.0, 0.0, 0.0}, glm::vec2{0.7, 0.6}),
-      std::make_unique<PointLight>(
-          glm::vec3{0.0, 0.0, 0.0}, glm::vec3{5.0, 5.0, 5.0},
-          glm::vec3{5.0, 5.0, 5.0}, glm::vec3{-2.0, -2.0, -2.0},
-          glm::vec3{1.0, 1.5, 2.0}),
-  };
+  std::vector<std::unique_ptr<LightBase>> day_lights;
+  day_lights.push_back(std::make_unique<DirectionalLight>(
+      glm::vec3{0.3, 0.3, 0.3}, glm::vec3{1.0, 1.0, 1.0},
+      glm::vec3{1.0, 1.0, 1.0}, glm::vec3{3.0, 3.0, 3.0}));
+  day_lights.push_back(std::make_unique<Spotlight>(
+      glm::vec3{0.0, 0.0, 0.0}, glm::vec3{5.0, 5.0, 5.0},
+      glm::vec3{5.0, 5.0, 5.0}, glm::vec3{1.2, 1.2, 1.2},
+      glm::vec3{0.0, 0.0, 0.0}, glm::vec2{0.7, 0.6}));
+  day_lights.push_back(std::make_unique<PointLight>(
+      glm::vec3{0.0, 0.0, 0.0}, glm::vec3{5.0, 5.0, 5.0},
+      glm::vec3{5.0, 5.0, 5.0}, glm::vec3{-2.0, -2.0, -2.0},
+      glm::vec3{1.0, 1.5, 2.0}));
+  std::vector<std::unique_ptr<LightBase>> night_lights;
+  night_lights.push_back(std::make_unique<DirectionalLight>(
+      glm::vec3{0.0, 0.0, 0.0}, glm::vec3{1.0, 1.0, 1.0},
+      glm::vec3{1.0, 1.0, 1.0}, glm::vec3{3.0, 3.0, 3.0}));
+  night_lights.push_back(std::make_unique<Spotlight>(
+      glm::vec3{0.0, 0.0, 0.0}, glm::vec3{5.0, 5.0, 5.0},
+      glm::vec3{5.0, 5.0, 5.0}, glm::vec3{1.2, 1.2, 1.2},
+      glm::vec3{0.0, 0.0, 0.0}, glm::vec2{0.7, 0.6}));
+  night_lights.push_back(std::make_unique<PointLight>(
+      glm::vec3{0.0, 0.0, 0.0}, glm::vec3{5.0, 5.0, 5.0},
+      glm::vec3{5.0, 5.0, 5.0}, glm::vec3{-2.0, -2.0, -2.0},
+      glm::vec3{1.0, 1.5, 2.0}));
+  std::vector<std::unique_ptr<LightBase>> const* active_lights = &day_lights;
 
   double old_mouse_pos_x, old_mouse_pos_y, cur_mouse_pos_x, cur_mouse_pos_y;
   glfwGetCursorPos(window, &cur_mouse_pos_x, &cur_mouse_pos_y);
@@ -152,6 +165,19 @@ int Sculptor::Main() {
       active_camera = &follower_camera;
     else if (is_key_pressed(GLFW_KEY_3))
       active_camera = &thrid_person_camera;
+    if (is_key_pressed(GLFW_KEY_N)) {
+      for (auto const& light : *active_lights) {
+        light->Disable(drill.GetObject().GetShader());
+        light->Disable(material.GetObject().GetShader());
+      }
+      if (active_lights == &day_lights) {
+        active_lights = &night_lights;
+        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+      } else if (active_lights == &night_lights) {
+        active_lights = &day_lights;
+        glClearColor(44.0f / 255.0f, 219.0f / 255.0f, 216.0f / 255.0f, 0.0f);
+      }
+    }
 
     glfwGetCursorPos(window, &cur_mouse_pos_x, &cur_mouse_pos_y);
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
@@ -167,7 +193,7 @@ int Sculptor::Main() {
     drill.Spin();
     material.Collide(drill.GetObject());
 
-    for (auto& light : lights) {
+    for (auto const& light : *active_lights) {
       light->LoadIntoShader(drill.GetObject().GetShader());
       light->LoadIntoShader(material.GetObject().GetShader());
     }

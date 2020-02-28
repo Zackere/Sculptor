@@ -32,18 +32,18 @@ CubeSculptingMaterial::CubeSculptingMaterial(
 CubeSculptingMaterial::~CubeSculptingMaterial() = default;
 
 void CubeSculptingMaterial::Render(glm::mat4 const& vp) {
-  visible_material_->Render(vp * global_transform_);
+  visible_material_->Render(vp);
 }
 
 void CubeSculptingMaterial::Rotate(float amount) {
-  global_transform_ = glm::rotate(glm::mat4(1.f), amount, glm::vec3(0, 1, 0)) *
-                      global_transform_;
+  visible_material_->Transform(
+      glm::rotate(glm::mat4(1.f), amount, glm::vec3(0, 1, 0)));
 }
 
 void CubeSculptingMaterial::Collide(glObject& object) {
-  object.Transform(glm::inverse(global_transform_));
+  object.Transform(glm::inverse(visible_material_->GetGlobalTransform()));
   collision_algorithm_->Run(this, object);
-  object.Transform(global_transform_);
+  object.Transform(visible_material_->GetGlobalTransform());
 }
 
 glInstancedObject& CubeSculptingMaterial::GetObject() {
