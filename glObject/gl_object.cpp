@@ -56,16 +56,19 @@ glObject::glObject(std::unique_ptr<ModelProviderBase> model_provider,
   glBindBuffer(GL_ARRAY_BUFFER, model_parameters_.normals->GetGLBuffer());
   glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
-  glUseProgram(shader_->Get());
-  glUniform4f(glGetUniformLocation(shader_->Get(), "light_coefficient"),
+  shader_->Use();
+  glUniform4f(shader_->GetUniformLocation("light_coefficient"),
               light_coefficient.x, light_coefficient.y, light_coefficient.z,
               light_coefficient.w);
 }
 
-glObject::~glObject() = default;
+glObject::~glObject() {
+  glDeleteTextures(1, &texture_);
+  glDeleteVertexArrays(1, &vao_);
+}
 
 void glObject::Enable() const {
-  glUseProgram(shader_->Get());
+  shader_->Use();
   glBindVertexArray(vao_);
   glBindTexture(GL_TEXTURE_2D, texture_);
 }
@@ -83,8 +86,7 @@ ShaderProgramBase* glObject::GetShader() {
 
 void glObject::Render(glm::mat4 const& vp) const {
   Enable();
-  glUniformMatrix4fv(glGetUniformLocation(shader_->Get(), "vp"), 1, GL_FALSE,
-                     &vp[0][0]);
+  glUniformMatrix4fv(shader_->GetUniformLocation("vp"), 1, GL_FALSE, &vp[0][0]);
   glDrawArrays(GL_TRIANGLES, 0, GetNumberOfModelVertices());
 }
 

@@ -14,10 +14,12 @@ namespace Sculptor {
 class MatrixApplierBase;
 class glObject;
 class glInstancedObject;
+class ShaderFactory;
 
 class CubeSculptingMaterialCPU : public SculptingMaterial {
  public:
   CubeSculptingMaterialCPU(unsigned ncubes_per_side,
+                           ShaderFactory* shader_factory,
                            std::unique_ptr<MatrixApplierBase> matrix_applier);
   ~CubeSculptingMaterialCPU() override;
 

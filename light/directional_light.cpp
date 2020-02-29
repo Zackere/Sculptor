@@ -16,10 +16,9 @@ DirectionalLight::DirectionalLight(glm::vec3 ambient,
 
 void DirectionalLight::LoadIntoShader(ShaderProgramBase* shader) {
   LightBase::LoadIntoShader(shader);
-  glUseProgram(shader->Get());
+  shader->Use();
   auto id = std::to_string(GetId());
-  glUniform3f(glGetUniformLocation(
-                  shader->Get(),
+  glUniform3f(shader->GetUniformLocation(
                   (std::string(kClassName) + '[' + id + "].direction").c_str()),
               direction_.x, direction_.y, direction_.z);
 }

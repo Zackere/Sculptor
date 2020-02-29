@@ -18,15 +18,13 @@ PointLight::PointLight(glm::vec3 ambient,
 
 void PointLight::LoadIntoShader(ShaderProgramBase* shader) {
   LightBase::LoadIntoShader(shader);
-  glUseProgram(shader->Get());
+  shader->Use();
   auto id = std::to_string(GetId());
-  glUniform3f(glGetUniformLocation(
-                  shader->Get(),
+  glUniform3f(shader->GetUniformLocation(
                   (std::string(kClassName) + '[' + id + "].position").c_str()),
               position_.x, position_.y, position_.z);
   glUniform3f(
-      glGetUniformLocation(
-          shader->Get(),
+      shader->GetUniformLocation(
           (std::string(kClassName) + '[' + id + "].attenuation").c_str()),
       attenuation_.x, attenuation_.y, attenuation_.z);
 }

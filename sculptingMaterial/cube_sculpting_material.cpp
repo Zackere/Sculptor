@@ -13,7 +13,8 @@
 #include "../glObject/gl_object.hpp"
 #include "../matrixApplier/matrix_applier.hpp"
 #include "../modelProvider/obj_provider.hpp"
-#include "../shaderProgram/shader_program.hpp"
+#include "../shaderFactory/shader_factory.hpp"
+#include "../shaderProgram/shader_program_base.hpp"
 #include "../textureProvider/png_texture_provider.hpp"
 
 namespace Sculptor {
@@ -26,14 +27,14 @@ float Len(glm::vec3 const& v) {
 }  // namespace
 CubeSculptingMaterialCPU::CubeSculptingMaterialCPU(
     unsigned ncubes_per_side,
+    ShaderFactory* shader_factory,
     std::unique_ptr<MatrixApplierBase> matrix_applier)
     : SculptingMaterial(std::make_unique<glInstancedObject>(
           1 << (3 * ncubes_per_side),
           std::make_unique<glObject>(
               std::make_unique<ObjProvider>("../Sculptor/model/cube.obj"),
-              std::make_unique<ShaderProgram>(
-                  "../Sculptor/shader/phong/instanced_phong_vertex_shader.vs",
-                  "../Sculptor/shader/phong/phong_fragment_shader.fs"),
+              shader_factory->GetShader(ShaderFactory::ShaderType::PHONG,
+                                        ShaderFactory::ObjectType::INSTANCED),
               std::make_unique<MatrixApplier>(),
               std::make_unique<PNGTextureProvider>(
                   "../Sculptor/texture/cube.png"),

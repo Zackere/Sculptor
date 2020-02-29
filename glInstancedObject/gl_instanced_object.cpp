@@ -22,7 +22,7 @@ glInstancedObject::glInstancedObject(
       matrix_applier_(std::move(matrix_applier)) {
   auto assign_transforms = [this](char const* name,
                                   CudaGraphicsResource<glm::mat4>& buf) {
-    auto id = glGetAttribLocation(reference_model_->GetShader()->Get(), name);
+    auto id = reference_model_->GetShader()->GetAttribLocation(name);
     glEnableVertexAttribArray(id);
     glBindBuffer(GL_ARRAY_BUFFER, buf.GetGLBuffer());
     for (int i = 0; i < 4; ++i) {
@@ -41,16 +41,15 @@ glInstancedObject::~glInstancedObject() = default;
 
 void glInstancedObject::Render(glm::mat4 const& vp) const {
   reference_model_->Enable();
+  glUniformMatrix4fv(reference_model_->GetShader()->GetUniformLocation("vp"), 1,
+                     GL_FALSE, &vp[0][0]);
   glUniformMatrix4fv(
-      glGetUniformLocation(reference_model_->GetShader()->Get(), "vp"), 1,
-      GL_FALSE, &vp[0][0]);
-  glUniformMatrix4fv(glGetUniformLocation(reference_model_->GetShader()->Get(),
-                                          "global_transform"),
-                     1, GL_FALSE, &global_transform_[0][0]);
+      reference_model_->GetShader()->GetUniformLocation("global_transform"), 1,
+      GL_FALSE, &global_transform_[0][0]);
   auto i_global_transform = glm::inverse(global_transform_);
-  glUniformMatrix4fv(glGetUniformLocation(reference_model_->GetShader()->Get(),
-                                          "i_global_transform"),
-                     1, GL_FALSE, &i_global_transform[0][0]);
+  glUniformMatrix4fv(
+      reference_model_->GetShader()->GetUniformLocation("i_global_transform"),
+      1, GL_FALSE, &i_global_transform[0][0]);
   glDrawArraysInstanced(GL_TRIANGLES, 0,
                         reference_model_->GetNumberOfModelVertices(),
                         GetNumberOfInstances());

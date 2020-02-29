@@ -1,4 +1,4 @@
-// Copyright 2020 Wojciech Replin. All rights reserved.
+﻿// Copyright 2020 Wojciech Replin. All rights reserved.
 
 #pragma once
 
@@ -16,7 +16,9 @@ class ShaderProgram : public ShaderProgramBase {
                 std::string_view fragment_shader_path);
   ~ShaderProgram() override;
 
-  GLuint Get() override;
+  void Use() override;
+  GLuint GetUniformLocation(char const* name) override;
+  GLuint GetAttribLocation(char const* name) override;
 
  private:
   GLuint program_ = 0;

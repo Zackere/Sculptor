@@ -25,6 +25,7 @@
 #include "../matrixApplier/matrix_applier.hpp"
 #include "../modelProvider/obj_provider.hpp"
 #include "../sculptingMaterial/cube_sculpting_material.hpp"
+#include "../shaderFactory/shader_factory_impl.hpp"
 #include "../shaderProgram/shader_program.hpp"
 #include "../textureProvider/png_texture_provider.hpp"
 
@@ -87,15 +88,18 @@ int Sculptor::Main() {
   glClearColor(44.0f / 255.0f, 219.0f / 255.0f, 216.0f / 255.0f, 0.0f);
   std::string base = "../Sculptor/";
   constexpr int ncubes = 6;
+
+  std::unique_ptr<ShaderFactory> shader_factory =
+      std::make_unique<ShaderFactoryImpl>();
+
   std::unique_ptr<SculptingMaterial> material =
       std::make_unique<CubeSculptingMaterialCPU>(
-          ncubes, std::make_unique<MatrixApplier>());
+          ncubes, shader_factory.get(), std::make_unique<MatrixApplier>());
 
   std::unique_ptr<glObject> drill_model = std::make_unique<glObject>(
       std::make_unique<ObjProvider>(base + "model/cube.obj"),
-      std::make_unique<ShaderProgram>(
-          base + "shader/phong/phong_vertex_shader.vs",
-          base + "shader/phong/phong_fragment_shader.fs"),
+      shader_factory->GetShader(ShaderFactory::ShaderType::PHONG,
+                                ShaderFactory::ObjectType::NORMAL),
       std::make_unique<MatrixApplier>(),
       std::make_unique<PNGTextureProvider>(base + "texture/cube.png"),
       glm::vec4{1.0, 0.4, 1.0, 10.0});

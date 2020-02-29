@@ -20,19 +20,16 @@ Spotlight::Spotlight(glm::vec3 ambient,
 
 void Spotlight::LoadIntoShader(ShaderProgramBase* shader) {
   LightBase::LoadIntoShader(shader);
-  glUseProgram(shader->Get());
+  shader->Use();
   auto id = std::to_string(GetId());
-  glUniform3f(glGetUniformLocation(
-                  shader->Get(),
+  glUniform3f(shader->GetUniformLocation(
                   (std::string(kClassName) + '[' + id + "].position").c_str()),
               position_.x, position_.y, position_.z);
   glUniform3f(
-      glGetUniformLocation(
-          shader->Get(),
+      shader->GetUniformLocation(
           (std::string(kClassName) + '[' + id + "].look_target").c_str()),
       look_target_.x, look_target_.y, look_target_.z);
-  glUniform2f(glGetUniformLocation(
-                  shader->Get(),
+  glUniform2f(shader->GetUniformLocation(
                   (std::string(kClassName) + '[' + id + "].cutoff").c_str()),
               cutoff_.x, cutoff_.y);
 }

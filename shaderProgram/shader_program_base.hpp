@@ -9,6 +9,8 @@ class ShaderProgramBase {
  public:
   virtual ~ShaderProgramBase() = default;
 
-  virtual GLuint Get() = 0;
+  virtual void Use() = 0;
+  virtual GLuint GetUniformLocation(char const* name) = 0;
+  virtual GLuint GetAttribLocation(char const* name) = 0;
 };
 }  // namespace Sculptor

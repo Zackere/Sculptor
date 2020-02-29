@@ -53,8 +53,7 @@ glm::vec3 BasicCamera::Rotate(glm::vec2 const& direction) {
 }
 
 void BasicCamera::LoadIntoShader(ShaderProgramBase* shader) {
-  glUseProgram(shader->Get());
-  glUniform3f(glGetUniformLocation(shader->Get(), "eye_pos"), pos_.x, pos_.y,
-              pos_.z);
+  shader->Use();
+  glUniform3f(shader->GetUniformLocation("eye_pos"), pos_.x, pos_.y, pos_.z);
 }
 }  // namespace Sculptor

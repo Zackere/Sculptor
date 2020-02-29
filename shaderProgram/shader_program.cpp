@@ -107,7 +107,15 @@ ShaderProgram::~ShaderProgram() {
   glDeleteProgram(program_);
 }
 
-GLuint ShaderProgram::Get() {
-  return program_;
+void ShaderProgram::Use() {
+  glUseProgram(program_);
+}
+
+GLuint ShaderProgram::GetUniformLocation(char const* name) {
+  return glGetUniformLocation(program_, name);
+}
+
+GLuint ShaderProgram::GetAttribLocation(char const* name) {
+  return glGetAttribLocation(program_, name);
 }
 }  // namespace Sculptor

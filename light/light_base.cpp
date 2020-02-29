@@ -24,18 +24,15 @@ LightBase::LightBase(glm::vec3 ambient,
 }
 
 void LightBase::LoadIntoShader(ShaderProgramBase* shader) {
-  glUseProgram(shader->Get());
+  shader->Use();
   auto id_string = std::to_string(id_);
-  glUniform3f(glGetUniformLocation(
-                  shader->Get(),
+  glUniform3f(shader->GetUniformLocation(
                   (light_class_name_ + "[" + id_string + "].ambient").c_str()),
               ambient_.x, ambient_.y, ambient_.z);
-  glUniform3f(glGetUniformLocation(
-                  shader->Get(),
+  glUniform3f(shader->GetUniformLocation(
                   (light_class_name_ + "[" + id_string + "].diffuse").c_str()),
               diffuse_.x, diffuse_.y, diffuse_.z);
-  glUniform3f(glGetUniformLocation(
-                  shader->Get(),
+  glUniform3f(shader->GetUniformLocation(
                   (light_class_name_ + "[" + id_string + "].specular").c_str()),
               specular_.x, specular_.y, specular_.z);
   Enable(shader);
@@ -46,18 +43,16 @@ void LightBase::UnloadFromShader(ShaderProgramBase* shader) {
 }
 
 void LightBase::Enable(ShaderProgramBase* shader) {
-  glUseProgram(shader->Get());
-  glUniform1i(glGetUniformLocation(
-                  shader->Get(),
+  shader->Use();
+  glUniform1i(shader->GetUniformLocation(
                   (light_class_name_ + '[' + std::to_string(id_) + "].enabled")
                       .c_str()),
               true);
 }
 
 void LightBase::Disable(ShaderProgramBase* shader) {
-  glUseProgram(shader->Get());
-  glUniform1i(glGetUniformLocation(
-                  shader->Get(),
+  shader->Use();
+  glUniform1i(shader->GetUniformLocation(
                   (light_class_name_ + '[' + std::to_string(id_) + "].enabled")
                       .c_str()),
               false);
