@@ -24,7 +24,7 @@
 #include "../light/spotlight.hpp"
 #include "../matrixApplier/matrix_applier.hpp"
 #include "../modelProvider/obj_provider.hpp"
-#include "../sculptingMaterial/cube_sculpting_material.hpp"
+#include "../sculptingMaterial/cube_sculpting_material_cpu.hpp"
 #include "../shaderFactory/shader_factory_impl.hpp"
 #include "../shaderProgram/shader_program.hpp"
 #include "../textureProvider/png_texture_provider.hpp"

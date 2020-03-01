@@ -1,6 +1,6 @@
 // Copyright 2020 Wojciech Replin. All rights reserved.
 
-#include "cube_sculpting_material.hpp"
+#include "cube_sculpting_material_cpu.hpp"
 
 #include <algorithm>
 #include <functional>
