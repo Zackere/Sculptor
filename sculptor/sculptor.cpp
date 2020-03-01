@@ -162,6 +162,22 @@ int Sculptor::Main() {
                          0.0f);
           }
           break;
+        case GLFW_KEY_B:
+          drill.GetObject().SetShader(
+              shader_factory->GetShader(ShaderFactory::ShaderType::BLINN,
+                                        ShaderFactory::ObjectType::NORMAL));
+          material->GetObject().SetShader(
+              shader_factory->GetShader(ShaderFactory::ShaderType::BLINN,
+                                        ShaderFactory::ObjectType::INSTANCED));
+          break;
+        case GLFW_KEY_P:
+          drill.GetObject().SetShader(
+              shader_factory->GetShader(ShaderFactory::ShaderType::PHONG,
+                                        ShaderFactory::ObjectType::NORMAL));
+          material->GetObject().SetShader(
+              shader_factory->GetShader(ShaderFactory::ShaderType::PHONG,
+                                        ShaderFactory::ObjectType::INSTANCED));
+          break;
         case GLFW_KEY_1:
           active_camera = &static_camera;
           break;
@@ -203,10 +219,10 @@ int Sculptor::Main() {
     material->CollideWith(drill.GetObject());
 
     for (auto const& light : *active_lights) {
-      light->LoadIntoShader(drill.GetObject().GetShader());
+      drill.GetObject().Load(light.get());
       material->GetObject().Load(light.get());
     }
-    active_camera->LoadIntoShader(drill.GetObject().GetShader());
+    drill.GetObject().Load(active_camera);
     material->GetObject().Load(active_camera);
 
     glm::mat4 const projection = glm::perspective(

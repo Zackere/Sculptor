@@ -18,10 +18,10 @@ glObject::glObject(std::unique_ptr<ModelProviderBase> model_provider,
                    std::unique_ptr<TextureProviderBase> texture_provider,
                    glm::vec4 light_coefficient)
     : model_parameters_{nullptr, nullptr, nullptr},
-      shader_(std::move(shader_program)),
-      matrix_applier_(std::move(matrix_applier)) {
+      shader_(nullptr),
+      matrix_applier_(std::move(matrix_applier)),
+      light_coefficient_(light_coefficient) {
   glGenVertexArrays(1, &vao_);
-  glBindVertexArray(vao_);
 
   std::vector<glm::vec3> verticies, normals;
   std::vector<glm::vec2> uvs;
@@ -44,22 +44,7 @@ glObject::glObject(std::unique_ptr<ModelProviderBase> model_provider,
 
   texture_ = texture_provider->Get();
 
-  glEnableVertexAttribArray(0);
-  glBindBuffer(GL_ARRAY_BUFFER, model_parameters_.verticies->GetGLBuffer());
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-
-  glEnableVertexAttribArray(1);
-  glBindBuffer(GL_ARRAY_BUFFER, model_parameters_.uvs->GetGLBuffer());
-  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
-
-  glEnableVertexAttribArray(2);
-  glBindBuffer(GL_ARRAY_BUFFER, model_parameters_.normals->GetGLBuffer());
-  glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-
-  shader_->Use();
-  glUniform4f(shader_->GetUniformLocation("light_coefficient"),
-              light_coefficient.x, light_coefficient.y, light_coefficient.z,
-              light_coefficient.w);
+  SetShader(std::move(shader_program));
 }
 
 glObject::~glObject() {
@@ -77,6 +62,29 @@ std::unique_ptr<ShaderProgramBase> glObject::SetShader(
     std::unique_ptr<ShaderProgramBase> shader) {
   auto ret = std::move(shader_);
   shader_ = std::move(shader);
+
+  shader_->Use();
+  glBindVertexArray(vao_);
+
+  auto id = shader_->GetAttribLocation("vertex_position");
+  glEnableVertexAttribArray(id);
+  glBindBuffer(GL_ARRAY_BUFFER, model_parameters_.verticies->GetGLBuffer());
+  glVertexAttribPointer(id, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+  id = shader_->GetAttribLocation("vertex_uv");
+  glEnableVertexAttribArray(id);
+  glBindBuffer(GL_ARRAY_BUFFER, model_parameters_.uvs->GetGLBuffer());
+  glVertexAttribPointer(id, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+  id = shader_->GetAttribLocation("vertex_normal");
+  glEnableVertexAttribArray(id);
+  glBindBuffer(GL_ARRAY_BUFFER, model_parameters_.normals->GetGLBuffer());
+  glVertexAttribPointer(id, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+  glUniform4f(shader_->GetUniformLocation("light_coefficient"),
+              light_coefficient_.x, light_coefficient_.y, light_coefficient_.z,
+              light_coefficient_.w);
+
   return ret;
 }
 

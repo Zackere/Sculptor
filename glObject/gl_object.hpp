@@ -59,5 +59,6 @@ class glObject {
   GLuint texture_ = 0;
   std::unique_ptr<MatrixApplierBase> matrix_applier_;
   glm::vec3 average_pos_ = {};
+  glm::vec4 light_coefficient_ = {};
 };
 }  // namespace Sculptor
