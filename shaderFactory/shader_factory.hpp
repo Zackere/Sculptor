@@ -13,7 +13,7 @@ class ShaderFactory {
 
   enum class ShaderType {
     PHONG,
-    BLINN,
+    GOURAND,
   };
   enum class ObjectType {
     NORMAL,

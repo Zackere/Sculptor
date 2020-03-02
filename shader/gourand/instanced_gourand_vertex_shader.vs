@@ -1,8 +1,9 @@
 #version 330 core
-
 layout(location = 0)in vec3 vertex_position;
 layout(location = 1)in vec2 vertex_uv;
 layout(location = 2)in vec3 vertex_normal;
+layout(location = 3)in mat4 model_transform;
+layout(location = 7)in mat4 i_model_transform;
 
 struct DirectionalLight{
     vec3 direction;
@@ -40,6 +41,9 @@ uniform Spotlight SculptorSpotlight[NSPOTLIGHTS];
 uniform vec4 light_coefficient;
 uniform vec3 eye_pos;
 uniform mat4 vp;
+uniform mat4 global_transform;
+uniform mat4 i_global_transform;
+uniform bool blinn;
 
 out vec2 uv;
 out vec3 light_color;
@@ -50,13 +54,14 @@ vec3 CalculateSpotlightContribution(vec3 pos, vec3 normal, vec3 eye_dir);
 
 void main(){
     uv = vertex_uv;
-    gl_Position = vp * vec4(vertex_position, 1);
+    vec3 pos = vec3(global_transform * model_transform * vec4(vertex_position, 1));
+    gl_Position = vp * vec4(pos, 1);
 
-    vec3 normal = normalize(vertex_normal);
-    vec3 eye_dir = normalize(eye_pos - vertex_position);
-    light_color = CalculateDirectionalLightContribution(vertex_position, normal, eye_dir) +
-                  CalculatePointLightContribution(vertex_position, normal, eye_dir) +
-                  CalculateSpotlightContribution(vertex_position, normal, eye_dir);
+    vec3 normal = normalize(vec3(transpose(i_model_transform * i_global_transform) * vec4(vertex_normal, 1)));
+    vec3 eye_dir = normalize(eye_pos - pos);
+    light_color = CalculateDirectionalLightContribution(pos, normal, eye_dir) +
+                  CalculatePointLightContribution(pos, normal, eye_dir) +
+                  CalculateSpotlightContribution(pos, normal, eye_dir);
 }
 
 vec3 CalculateDirectionalLightContribution(vec3 pos, vec3 normal, vec3 eye_dir) {

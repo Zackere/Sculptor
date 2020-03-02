@@ -17,8 +17,8 @@ std::unique_ptr<ShaderProgramBase> ShaderFactoryImpl::GetShader(
     case ShaderType::PHONG:
       prefix = "phong";
       break;
-    case ShaderType::BLINN:
-      prefix = "blinn";
+    case ShaderType::GOURAND:
+      prefix = "gourand";
       break;
   }
   vertex_name = prefix + vertex_name;

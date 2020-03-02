@@ -164,10 +164,10 @@ int Sculptor::Main() {
           break;
         case GLFW_KEY_B:
           drill.GetObject().SetShader(
-              shader_factory->GetShader(ShaderFactory::ShaderType::BLINN,
+              shader_factory->GetShader(ShaderFactory::ShaderType::GOURAND,
                                         ShaderFactory::ObjectType::NORMAL));
           material->GetObject().SetShader(
-              shader_factory->GetShader(ShaderFactory::ShaderType::BLINN,
+              shader_factory->GetShader(ShaderFactory::ShaderType::GOURAND,
                                         ShaderFactory::ObjectType::INSTANCED));
           break;
         case GLFW_KEY_P:

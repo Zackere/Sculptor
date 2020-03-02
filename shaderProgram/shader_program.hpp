@@ -19,6 +19,7 @@ class ShaderProgram : public ShaderProgramBase {
   void Use() override;
   GLuint GetUniformLocation(char const* name) override;
   GLuint GetAttribLocation(char const* name) override;
+  void SetLightModel(LightModel light_model) override;
 
  private:
   GLuint program_ = 0;

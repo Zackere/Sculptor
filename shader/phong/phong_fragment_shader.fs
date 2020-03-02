@@ -36,6 +36,7 @@ uniform Spotlight SculptorSpotlight[NSPOTLIGHTS];
 uniform vec4 light_coefficient;
 uniform vec3 eye_pos;
 uniform sampler2D texture_sampler;
+uniform bool blinn;
 
 in vec3 pos;
 in vec3 normal;
