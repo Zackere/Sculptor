@@ -24,11 +24,11 @@ class glInstancedObject {
 
   void Render(glm::mat4 const& vp) const;
   void Transform(glm::mat4 const& m);
-  template <class T>
+  template <typename T>
   void Load(T* t) {
     reference_model_->Load(t);
   }
-  template <class T>
+  template <typename T>
   void Unload(T* t) {
     reference_model_->Unload(t);
   }
@@ -43,6 +43,7 @@ class glInstancedObject {
   unsigned SetInstance(glm::mat4 const& new_instance, unsigned index);
   glm::mat4 GetTransformAt(unsigned index);
   glm::mat4 GetGlobalTransform() const { return global_transform_; }
+  glObject& GetObject() { return *reference_model_; }
 
   std::unique_ptr<ShaderProgramBase> SetShader(
       std::unique_ptr<ShaderProgramBase> shader);

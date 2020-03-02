@@ -68,7 +68,11 @@ vec3 CalculateDirectionalLightContribution(vec3 pos, vec3 normal, vec3 eye_dir) 
 
         vec3 light = normalize(SculptorDirectionalLight[i].direction);
         float diff_cos = max(dot(light, normal), 0.0);
-        float spec_cos = pow(max(dot(2 * diff_cos * normal - light, eye_dir), 0.0), light_coefficient.w);
+        float spec_cos = 0.0;
+        if(!blinn)
+            spec_cos = pow(max(dot(2 * diff_cos * normal - light, eye_dir), 0.0), light_coefficient.w);
+        else
+            spec_cos = pow(max(dot(normal, normalize(light + eye_dir)), 0.0), 4.0 * light_coefficient.w);
 
         ret += light_coefficient.x * SculptorDirectionalLight[i].ambient
              + light_coefficient.y * SculptorDirectionalLight[i].diffuse * diff_cos
@@ -88,7 +92,11 @@ vec3 CalculatePointLightContribution(vec3 pos, vec3 normal, vec3 eye_dir) {
 
         vec3 light = (SculptorPointLight[i].position - pos) / distance;
         float diff_cos = max(dot(light, normal), 0.0);
-        float spec_cos = pow(max(dot(2 * diff_cos * normal - light, eye_dir), 0.0), light_coefficient.w);
+        float spec_cos = 0.0;
+        if(!blinn)
+            spec_cos = pow(max(dot(2 * diff_cos * normal - light, eye_dir), 0.0), light_coefficient.w);
+        else
+            spec_cos = pow(max(dot(normal, normalize(light + eye_dir)), 0.0), 4.0 * light_coefficient.w);
 
         ret += (light_coefficient.x * SculptorPointLight[i].ambient
               + light_coefficient.y * SculptorPointLight[i].diffuse * diff_cos
@@ -111,7 +119,11 @@ vec3 CalculateSpotlightContribution(vec3 pos, vec3 normal, vec3 eye_dir) {
         float intensity = clamp((theta - SculptorSpotlight[i].cutoff.x) /
                           (SculptorSpotlight[i].cutoff.x - SculptorSpotlight[i].cutoff.y), 0.0, 1.0);
         float diff_cos = max(dot(light, normal), 0.0);
-        float spec_cos = pow(max(dot(2 * diff_cos * normal - light, eye_dir), 0.0), light_coefficient.w);
+        float spec_cos = 0.0;
+        if(!blinn)
+            spec_cos = pow(max(dot(2 * diff_cos * normal - light, eye_dir), 0.0), light_coefficient.w);
+        else
+            spec_cos = pow(max(dot(normal, normalize(light + eye_dir)), 0.0), 4.0 * light_coefficient.w);
 
         ret += light_coefficient.x * SculptorSpotlight[i].ambient
              + (light_coefficient.y * SculptorSpotlight[i].diffuse * diff_cos +

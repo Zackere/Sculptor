@@ -162,7 +162,7 @@ int Sculptor::Main() {
                          0.0f);
           }
           break;
-        case GLFW_KEY_B:
+        case GLFW_KEY_O:
           drill.GetObject().SetShader(
               shader_factory->GetShader(ShaderFactory::ShaderType::GOURAND,
                                         ShaderFactory::ObjectType::NORMAL));
@@ -177,6 +177,18 @@ int Sculptor::Main() {
           material->GetObject().SetShader(
               shader_factory->GetShader(ShaderFactory::ShaderType::PHONG,
                                         ShaderFactory::ObjectType::INSTANCED));
+          break;
+        case GLFW_KEY_B:
+          drill.GetObject().GetShader()->SetLightModel(
+              ShaderProgramBase::LightModel::BLINN);
+          material->GetObject().GetObject().GetShader()->SetLightModel(
+              ShaderProgramBase::LightModel::BLINN);
+          break;
+        case GLFW_KEY_V:
+          drill.GetObject().GetShader()->SetLightModel(
+              ShaderProgramBase::LightModel::PHONG);
+          material->GetObject().GetObject().GetShader()->SetLightModel(
+              ShaderProgramBase::LightModel::PHONG);
           break;
         case GLFW_KEY_1:
           active_camera = &static_camera;

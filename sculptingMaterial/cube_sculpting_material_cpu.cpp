@@ -89,7 +89,7 @@ void CubeSculptingMaterialCPU::CollideWith(glObject& object) {
     }
   };
   for (auto& p : object.GetVertices()->ToStdVector()) {
-    if (std::abs(p.x) > 1 || std::abs(p.y) > 1 || std::abs(p.z) > 1)
+    if (Len(p) > 1)
       continue;
     query_point = p;
     current_nearest_node = nullptr;

@@ -120,6 +120,7 @@ GLuint ShaderProgram::GetAttribLocation(char const* name) {
 }
 
 void ShaderProgram::SetLightModel(LightModel light_model) {
+  Use();
   glUniform1i(GetUniformLocation("blinn"), light_model == LightModel::BLINN);
 }
 }  // namespace Sculptor
